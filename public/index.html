@@ -6,35 +6,45 @@
   <meta name="theme-color" content="#2563eb">
   <meta name="description" content="Application de partage d'écran en temps réel sur réseau local - Multi-navigateurs">
   <meta name="author" content="MASSE MASSE PAUL - BASTHYLLE">
-  <title>PBM Share Screen - Partage d'écran réseau local</title>
+  <title>ESTLC Share Screen - Partage d'écran réseau local</title>
   
   <link rel="stylesheet" href="static/style.css">
+  <link rel="stylesheet" href="static/style_chat.css">
+  <link rel="stylesheet" href="static/emoji.css">
+  <link rel="stylesheet" href="static/videoReactions.css">  
+  
   <script src="/socket.io/socket.io.js"></script>
   
-  <!-- Préchargement des polices -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
 </head>
 <body>
-  <!-- Statut de connexion (fixe en haut à droite) -->
+  <!-- Statut de connexion -->
   <div class="connection-status" id="connectionStatus">
     <span class="status-dot"></span>
     <span id="connectionText">Connexion...</span>
   </div>
 
+  <!-- Bouton Chat flottant -->
+  <button class="chat-btn" id="chatBtn" aria-label="Ouvrir le chat">
+    <span>💬</span>
+    <span id="unreadBadge" class="unread-badge">0</span>
+  </button>
+
   <!-- Conteneur principal -->
   <div class="container">
-    <!-- En-tête -->
     <header>
-      <h1>PBM Share Screen</h1>
-      <p class="subtitle">Réseau local • Multi-navigateurs • Temps réel</p>
+      <h1>ESTLC Share Screen</h1>
+      <p class="subtitle">
+        Réseau local • Multi-navigateurs • Temps réel • Version 1.2 Pro
+      </p>
     </header>
 
-    <!-- Conteneur d'alertes -->
     <div id="alertContainer"></div>
 
-    <!-- Barre de statut -->
     <div class="status-bar">
       <div class="status-item">
         <span>👥</span>
@@ -46,7 +56,6 @@
       </div>
     </div>
 
-    <!-- Contrôles -->
     <div class="controls">
       <input 
         type="text" 
@@ -60,13 +69,19 @@
         <span>📹</span>
         <span>Partager mon écran</span>
       </button>
+      
+      <!-- ✅ NOUVEAU: Bouton pour demander à partager -->
+      <button class="btn-secondary" id="requestBtn" style="display: none;" aria-label="Demander à partager">
+        <span>📢</span>
+        <span>Demander à partager</span>
+      </button>
+      
       <button class="btn-danger" id="stopBtn" style="display: none;" aria-label="Arrêter le partage">
         <span>⏹️</span>
         <span>Arrêter le partage</span>
       </button>
     </div>
 
-    <!-- Conteneur vidéo (prend tout l'espace disponible) -->
     <div id="videoContainer" role="region" aria-label="Zone de partage d'écran">
       <div class="placeholder">
         <div class="placeholder-icon">🖥️</div>
@@ -78,7 +93,6 @@
       </div>
     </div>
 
-    <!-- Pied de page -->
     <footer class="footer">
       <div class="footer-content">
         <div class="footer-left">
@@ -89,12 +103,61 @@
           </a>
         </div>
         <div class="footer-right">
-          <p class="footer-year">© 2025 - Tous droits réservés</p>
+          <p class="footer-year">© 2025 ESTLC Dept-informatique - Tous droits réservés</p>
         </div>
       </div>
     </footer>
   </div>
 
+  <!-- Panel Chat Amélioré avec Swipe -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <button class="close-chat-btn" id="closeChatBtn" aria-label="Fermer le chat">✕</button>
+      <div class="chat-header-content">
+        <h3>💬 Chat en direct</h3>
+        <div class="chat-user-name" id="chatUserName">Invité</div>
+      </div>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-welcome">
+        <p>👋 Bienvenue dans le chat !</p>
+        <p>Communiquez avec tous les participants en temps réel.</p>
+        <p style="margin-top: 8px; font-size: 0.85em; opacity: 0.8;">
+          💡 Utilisez @ pour mentionner quelqu'un
+        </p>
+        <p style="font-size: 0.85em; opacity: 0.8;">
+          👉 Glissez un message vers la droite pour y répondre
+        </p>
+      </div>
+    </div>
+    
+    <div class="chat-input-container">
+      <div class="chat-input-wrapper">
+        <!-- Indicateur de réponse (créé dynamiquement) -->
+        <!-- Suggestions d'utilisateurs (créées dynamiquement) -->
+        
+        <textarea 
+          id="chatInput" 
+          placeholder="Tapez votre message... (@ pour mentionner, swipe pour répondre)" 
+          rows="1"
+          maxlength="500"
+        ></textarea>
+      </div>
+      
+      <!-- ✅ Le bouton emoji sera inséré automatiquement ici par emoji.js -->
+      
+      <button id="sendBtn" class="send-btn" aria-label="Envoyer le message">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ✅ IMPORTANT: Charger dans l'ordre -->
+  <script src="static/VideoReactions.js"></script>
+  <script src="static/emoji.js"></script>
+  <script src="static/chat.js"></script>
+  <script src="static/shareRequestManager.js"></script>
   <script src="static/app.js"></script>
 </body>
 </html>

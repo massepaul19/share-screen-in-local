@@ -1,0 +1,277 @@
+/* ========================================
+   public/static/videocall.css
+   Styles - Appel vidéo (grille)
+   ======================================== */
+
+/* Container principal */
+.videocall-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+}
+
+/* Grille de vidéos */
+.videocall-grid {
+  flex: 1;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  overflow: auto;
+}
+
+/* Layouts adaptatifs */
+.videocall-grid.grid-1 {
+  grid-template-columns: 1fr;
+}
+
+.videocall-grid.grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.videocall-grid.grid-4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.videocall-grid.grid-many {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-auto-rows: minmax(200px, 1fr);
+}
+
+/* Wrapper de chaque vidéo */
+.video-wrapper {
+  position: relative;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Vidéo locale (miroir) */
+.video-wrapper.local video {
+  transform: scaleX(-1);
+}
+
+/* Nom du participant */
+.name-tag {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Contrôles */
+.videocall-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: #2a2a2a;
+}
+
+.control-btn {
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-btn:hover {
+  transform: scale(1.1);
+}
+
+.control-btn.video-on {
+  background: #4a9eff;
+  color: white;
+}
+
+.control-btn.video-off {
+  background: #666;
+  color: white;
+}
+
+.control-btn.audio-on {
+  background: #4a9eff;
+  color: white;
+}
+
+.control-btn.audio-off {
+  background: #ed4245;
+  color: white;
+}
+
+.control-btn.leave-btn {
+  background: #ed4245;
+  color: white;
+}
+
+.control-btn.leave-btn:hover {
+  background: #c93739;
+}
+
+/* Responsive mobile */
+@media (max-width: 768px) {
+  .videocall-grid {
+    gap: 5px;
+    padding: 5px;
+  }
+  
+  .videocall-grid.grid-many {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  
+  .name-tag {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+  
+  .control-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .videocall-controls {
+    gap: 15px;
+    padding: 15px;
+  }
+}
+
+/* ========================================
+   📚 COURS : COMPRENDRE LES STYLES
+   ======================================== */
+
+/*
+┌─────────────────────────────────────────────────────────────────┐
+│              📐 SYSTÈME DE GRILLE                               │
+└─────────────────────────────────────────────────────────────────┘
+
+CSS Grid est utilisé pour disposer les vidéos.
+
+GRID-1 (1 participant) :
+- 1 colonne
+- Vidéo en plein écran
+
+GRID-2 (2 participants) :
+- 2 colonnes
+- Côte à côte
+
+GRID-4 (3-4 participants) :
+- 2 colonnes × 2 rangées
+- Grille 2×2
+
+GRID-MANY (5+ participants) :
+- repeat(auto-fit, minmax(300px, 1fr))
+- S'adapte automatiquement
+- Minimum 300px par vidéo
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              🎥 VIDÉO LOCAL EN MIROIR                           │
+└─────────────────────────────────────────────────────────────────┘
+
+.video-wrapper.local video {
+  transform: scaleX(-1);
+}
+
+💡 POURQUOI ?
+Quand tu te regardes dans un miroir, tu es habitué à voir
+ton reflet inversé. Sans ce flip, ça paraît bizarre.
+
+Seulement pour la vidéo locale !
+Les vidéos distantes ne sont PAS inversées.
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              🎨 OBJECT-FIT: COVER                               │
+└─────────────────────────────────────────────────────────────────┘
+
+.video-wrapper video {
+  object-fit: cover;
+}
+
+💡 OPTIONS :
+- cover : Remplit l'espace, coupe les bords (recommandé)
+- contain : Vidéo entière visible, peut avoir des bandes noires
+- fill : Déforme la vidéo pour remplir
+
+cover est le meilleur choix pour appel vidéo (style Zoom).
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              🎯 BOUTONS CIRCULAIRES                             │
+└─────────────────────────────────────────────────────────────────┘
+
+.control-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;  ← Cercle parfait
+}
+
+💡 COULEURS :
+- Bleu (#4a9eff) : Actif (vidéo on, audio on)
+- Gris (#666) : Inactif (vidéo off)
+- Rouge (#ed4245) : Danger (audio off, quitter)
+
+Hover : scale(1.1) → Zoom léger au survol
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              📱 RESPONSIVE DESIGN                               │
+└─────────────────────────────────────────────────────────────────┘
+
+@media (max-width: 768px) {
+  - Grille : 150px min au lieu de 300px
+  - Boutons : 50px au lieu de 60px
+  - Gaps réduits
+  - Font plus petit
+}
+
+💡 Mobile-first approach pour les appels vidéo
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              💡 PERSONNALISATIONS POSSIBLES                     │
+└─────────────────────────────────────────────────────────────────┘
+
+1. Mode Speaker (1 grand + miniatures)
+   - Vidéo principale : 80% de l'écran
+   - Autres : Bande en bas
+
+2. Mode Galerie (tous égaux)
+   - Grid actuel (déjà implémenté)
+
+3. Pinning (épingler un participant)
+   - Garder une vidéo en grand
+   - Même si quelqu'un d'autre parle
+
+4. Backgrounds virtuels
+   - Flou d'arrière-plan
+   - Image de fond personnalisée
+*/

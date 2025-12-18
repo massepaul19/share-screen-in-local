@@ -1,0 +1,439 @@
+/* ========================================
+   public/static/audiocall.css
+   Styles - Appel audio (liste)
+   ======================================== */
+
+/* Container principal */
+.audiocall-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  max-height: 600px;
+  background: #2f3136;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Header */
+.audiocall-header {
+  padding: 20px;
+  background: #202225;
+  border-bottom: 1px solid #40444b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.audiocall-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+#participant-count {
+  color: #b9bbbe;
+  font-size: 14px;
+}
+
+/* Liste des participants */
+.audiocall-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+/* Scrollbar personnalisée */
+.audiocall-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.audiocall-list::-webkit-scrollbar-track {
+  background: #2f3136;
+}
+
+.audiocall-list::-webkit-scrollbar-thumb {
+  background: #40444b;
+  border-radius: 4px;
+}
+
+.audiocall-list::-webkit-scrollbar-thumb:hover {
+  background: #4a4e56;
+}
+
+/* Participant */
+.audio-participant {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: #36393f;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.audio-participant:hover {
+  background: #3a3d44;
+}
+
+.audio-participant.me {
+  background: #404449;
+  border: 2px solid #5865f2;
+}
+
+.audio-participant.muted {
+  opacity: 0.6;
+}
+
+/* Avatar */
+.participant-avatar {
+  width: 40px;
+  height: 40px;
+  background: #5865f2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-icon {
+  font-size: 20px;
+}
+
+/* Info participant */
+.participant-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.participant-name {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.participant-status {
+  color: #b9bbbe;
+  font-size: 13px;
+}
+
+/* Indicateur audio */
+.participant-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.mute-icon {
+  font-size: 18px;
+  color: #ed4245;
+}
+
+/* Barres audio animées */
+.audio-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 20px;
+}
+
+.audio-bars .bar {
+  width: 3px;
+  background: #3ba55d;
+  border-radius: 2px;
+  animation: bounce 0.8s ease-in-out infinite;
+}
+
+.audio-bars .bar:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.audio-bars .bar:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.audio-bars .bar:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    height: 4px;
+  }
+  50% {
+    height: 20px;
+  }
+}
+
+/* Contrôles */
+.audiocall-controls {
+  padding: 20px;
+  background: #202225;
+  border-top: 1px solid #40444b;
+  display: flex;
+  gap: 10px;
+}
+
+.audio-control-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.audio-control-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.audio-control-btn.unmuted {
+  background: #3ba55d;
+  color: white;
+}
+
+.audio-control-btn.muted {
+  background: #ed4245;
+  color: white;
+}
+
+.audio-control-btn.leave {
+  background: #ed4245;
+  color: white;
+}
+
+.audio-control-btn.leave:hover {
+  background: #c93739;
+}
+
+/* Responsive mobile */
+@media (max-width: 480px) {
+  .audiocall-container {
+    width: 90%;
+    max-height: 80vh;
+  }
+  
+  .audiocall-header {
+    padding: 15px;
+  }
+  
+  .audiocall-header h3 {
+    font-size: 16px;
+  }
+  
+  .audio-participant {
+    padding: 10px;
+  }
+  
+  .participant-avatar {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .participant-name {
+    font-size: 14px;
+  }
+  
+  .audio-control-btn {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+}
+
+/* Animation d'entrée */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.audiocall-container {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ========================================
+   📚 COURS : COMPRENDRE LES STYLES
+   ======================================== */
+
+/*
+┌─────────────────────────────────────────────────────────────────┐
+│              🎨 INSPIRATION DISCORD                             │
+└─────────────────────────────────────────────────────────────────┘
+
+Couleurs Discord :
+- Background principal : #2f3136
+- Background secondaire : #36393f
+- Header/Footer : #202225
+- Accent bleu : #5865f2
+- Vert (online) : #3ba55d
+- Rouge (muted/danger) : #ed4245
+- Texte principal : #ffffff
+- Texte secondaire : #b9bbbe
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              📍 POSITIONNEMENT CENTRÉ                           │
+└─────────────────────────────────────────────────────────────────┘
+
+.audiocall-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+💡 POURQUOI ?
+Centrage parfait horizontal ET vertical
+Fonctionne quelle que soit la taille de l'écran
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              🔊 BARRES AUDIO ANIMÉES                            │
+└─────────────────────────────────────────────────────────────────┘
+
+3 barres qui montent/descendent :
+
+.audio-bars .bar {
+  animation: bounce 0.8s ease-in-out infinite;
+}
+
+Délai différent pour chaque barre :
+- Bar 1 : 0s
+- Bar 2 : 0.2s
+- Bar 3 : 0.4s
+
+Résultat : effet de vague
+
+@keyframes bounce {
+  0%, 100% { height: 4px; }   ← Court
+  50% { height: 20px; }       ← Grand
+}
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              👤 DISTINCTION MOI VS AUTRES                       │
+└─────────────────────────────────────────────────────────────────┘
+
+.audio-participant.me {
+  background: #404449;        ← Plus clair
+  border: 2px solid #5865f2;  ← Border bleue
+}
+
+💡 Visuellement clair que c'est moi
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              🔇 ÉTAT MUTED                                      │
+└─────────────────────────────────────────────────────────────────┘
+
+.audio-participant.muted {
+  opacity: 0.6;  ← Semi-transparent
+}
+
++ Remplace barres par icône 🔇
+
+💡 Visuellement clair qui est muted
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              📏 SCROLLBAR PERSONNALISÉE                         │
+└─────────────────────────────────────────────────────────────────┘
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #40444b;
+  border-radius: 4px;
+}
+
+💡 Scrollbar qui s'intègre au design Discord
+Fonctionne sur Chrome/Edge/Safari
+Firefox : utilise la scrollbar par défaut
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              ✨ ANIMATIONS                                      │
+└─────────────────────────────────────────────────────────────────┘
+
+1. Hover sur participant :
+   background: #3a3d44;
+   → Légèrement plus clair
+
+2. Hover sur bouton :
+   transform: translateY(-2px);
+   → Monte légèrement
+
+3. Apparition du container :
+   animation: fadeIn 0.3s;
+   → Fade in + translate
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              📱 RESPONSIVE                                      │
+└─────────────────────────────────────────────────────────────────┘
+
+Mobile (< 480px) :
+- Container : 90% de largeur
+- Paddings réduits
+- Fonts plus petits
+- Avatars plus petits (35px)
+
+💡 Garde la lisibilité sur petit écran
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│              💡 PERSONNALISATIONS POSSIBLES                     │
+└─────────────────────────────────────────────────────────────────┘
+
+1. Avatars personnalisés
+   - Upload image
+   - Ou afficher initiales du nom
+   - Couleur aléatoire par participant
+
+2. Indicateur "qui parle"
+   - Border glow vert quand quelqu'un parle
+   - Détecté avec Web Audio API
+
+3. Statistiques de connexion
+   - Latence
+   - Qualité audio (bitrate)
+   - Afficher avec une icône
+
+4. Thèmes
+   - Light mode
+   - Custom colors
+   - Suivre les préférences système
+
+5. Barres audio en temps réel
+   - Analyser le volume réel
+   - Ajuster hauteur selon volume
+   - Plus immersif
+*/

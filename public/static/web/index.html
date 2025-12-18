@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résumé - Cours de Réseau</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 900px;
+            text-align: center;
+        }
+        h1 {
+            color: #0056b3;
+        }
+        h2 {
+            color: #444;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 5px;
+            display: inline-block;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+            display: inline-block;
+        }
+        li {
+            background: #e9ecef;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .section {
+            margin-top: 30px;
+        }
+        .command-box {
+            background: #1e293b;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            text-align: left;
+            margin: 10px auto;
+            overflow-x: auto;
+            max-width: 800px;
+        }
+        .prof {
+            margin-top: 40px;
+            background: #dbeafe;
+            padding: 20px;
+            border-radius: 8px;
+            color: #1e3a8a;
+            font-style: italic;
+        }
+        footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .prof-photo {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 20px auto;
+            border: 4px solid #0056b3;
+            display: block;
+        }
+        .highlight {
+            background: #fef3c7;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        p {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Résumé du Cours de Réseau - Prof. ALAIN TCHANA</h1>
+
+        <img src="prof.png" alt="Photo du Professeur ALAIN TCHANA" class="prof-photo">
+
+        <p>Ce cours est animé par notre professeur, M. ALAIN TCHANA, un guide passionné qui nous apprend à créer des pages web, à les mettre en ligne et à comprendre le rôle essentiel des serveurs.</p>
+
+        <div class="section">
+            <h2>Compétences acquises</h2>
+            <ul>
+                <li>Créer des pages web statiques avec HTML & CSS.</li>
+                <li>Configurer le fichier `hosts` pour associer un nom à une adresse IP.</li>
+                <li>Comprendre le fonctionnement d'un serveur web.</li>
+                <li>Mettre un site web en ligne.</li>
+                <li>Configurer et déployer un site sur un serveur Apache.</li>
+                <li>Apprendre à valoriser le travail collaboratif et l'enseignement de notre professeur.</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Prérequis du cours</h2>
+            <ul>
+                <li>Une curiosité pour le fonctionnement du web.</li>
+                <li>Des connaissances de base en informatique.</li>
+                <li>Aucune expérience en programmation n'est requise !</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Ce que nous avons appris</h2>
+        </div>
+
+        <div class="section">
+            <h2>📡 Les Ports Internet</h2>
+            <p>Un <span class="highlight">port</span> est comme une porte dans une maison permettant d'accéder à différents services. Chaque service utilise un port spécifique pour communiquer :</p>
+            <ul>
+                <li>Port 80 : HTTP (sites web non sécurisés) - Port par défaut</li>
+                <li>Port 443 : HTTPS (sites web sécurisés)</li>
+                <li>Port 22 : SSH (connexion sécurisée à distance)</li>
+                <li>Port 3443 : Port personnalisé utilisé dans notre cours</li>
+            </ul>
+            <p>Quand aucun port n'est spécifié dans l'URL, le navigateur utilise automatiquement le port 80 pour HTTP.</p>
+        </div>
+
+        <div class="section">
+            <h2>🌐 Notion d'URL</h2>
+            <p>Une URL est l'adresse complète d'une ressource sur Internet.</p>
+            <p>Exemple : <span class="highlight">https://192.168.2.97:3443</span></p>
+            <ul>
+                <li><strong>https://</strong> - Protocole sécurisé de communication</li>
+                <li><strong>192.168.2.97</strong> - Adresse IP du serveur</li>
+                <li><strong>:3443</strong> - Port d'accès au service</li>
+            </ul>
+            <p>Nous avons pu accéder à ce site car nous étions dans le même réseau local.</p>
+        </div>
+
+        <div class="section">
+            <h2>🏠 Les Classes d'Adresses IP</h2>
+            <ul>
+                <li>Classe A : 10.0.0.0 à 10.255.255.255 (Grands réseaux)</li>
+                <li>Classe B : 172.16.0.0 à 172.31.255.255 (Réseaux moyens)</li>
+                <li>Classe C : 192.168.0.0 à 192.168.255.255 (Petits réseaux - Réseau local)</li>
+            </ul>
+            <p><strong>Notation /24 :</strong> Signifie que les 24 premiers bits définissent le réseau. Par exemple, 192.168.2.0/24 peut contenir 254 machines.</p>
+        </div>
+
+        <div class="section">
+            <h2>🌍 Adresses IP Publiques vs Privées</h2>
+            <p>Les <span class="highlight">adresses IP privées</span> (comme 192.168.x.x) sont utilisées dans nos réseaux locaux (maison, école, entreprise).</p>
+            <p>Les <span class="highlight">adresses IP publiques</span> (comme 16.171.140.43) sont uniques sur Internet et permettent d'être accessible depuis n'importe où dans le monde.</p>
+            <p><strong>Comment accédons-nous à Internet depuis notre réseau privé ?</strong></p>
+            <p>Grâce au <span class="highlight">NAT (Network Address Translation)</span> ! Notre routeur traduit notre adresse privée en adresse publique pour communiquer avec Internet. C'est comme si le routeur était un intermédiaire qui parle à Internet en notre nom.</p>
+        </div>
+
+        <div class="section">
+            <h2>📝 Le DNS et le Fichier Hosts</h2>
+            <p>Le <span class="highlight">DNS</span> (Domain Name System) traduit les noms de domaine en adresses IP.</p>
+            <p>Pour associer un nom à une adresse IP localement sur Linux, nous modifions le fichier hosts :</p>
+            <div class="command-box">sudo nano /etc/hosts</div>
+            <p><strong>Ajouter cette ligne :</strong></p>
+            <div class="command-box">192.168.2.97    polocisse</div>
+            <p>Ensuite, accéder au site via : <code>http://polocisse</code></p>
+            <p>Pas besoin de spécifier le port car Apache utilise automatiquement le port 80 par défaut pour HTTP.</p>
+        </div>
+
+        <div class="section">
+            <h2>☁️ Acheter une Machine sur Amazon AWS EC2</h2>
+            <ul>
+                <li>Créer un compte AWS et lancer une instance EC2.</li>
+                <li>Choisir Ubuntu comme système d'exploitation.</li>
+                <li>Lors de la création, AWS génère automatiquement une paire de clés SSH (fichier .pem) : <strong>cle-masse.pem</strong></li>
+                <li>Télécharger la clé créée par AWS dans le dossier Téléchargements.</li>
+                <li>Nom de la machine : <strong>ubuntu</strong></li>
+                <li>Adresse IP publique : <strong>16.171.140.43</strong></li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🔥 Régler le Firewall</h2>
+            <p>Dans les paramètres de sécurité AWS (Security Groups), activer :</p>
+            <ul>
+                <li>HTTP (Port 80)</li>
+                <li>HTTPS (Port 443)</li>
+                <li>SSH (Port 22)</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🔑 Utiliser les Clés SSH</h2>
+            <p>La clé SSH a été générée et créée directement sur AWS lors de l'achat de notre machine.</p>
+            <p><strong>Modifier les permissions de la clé téléchargée :</strong></p>
+            <div class="command-box">chmod 600 ~/Téléchargements/cle-masse.pem</div>
+        </div>
+
+        <div class="section">
+            <h2>🔐 Service OpenSSH</h2>
+            <p>Le service OpenSSH nous permet de nous connecter de manière sécurisée à notre serveur distant "ubuntu".</p>
+            <p><strong>Installer OpenSSH sur le serveur (si nécessaire) :</strong></p>
+            <div class="command-box">sudo apt update
+sudo apt install openssh-server -y</div>
+            <p><strong>Démarrer le service SSH :</strong></p>
+            <div class="command-box">sudo systemctl start ssh</div>
+            <p><strong>Activer SSH au démarrage :</strong></p>
+            <div class="command-box">sudo systemctl enable ssh</div>
+            <p><strong>Vérifier le statut du service :</strong></p>
+            <div class="command-box">sudo systemctl status ssh</div>
+            <p><strong>Vérifier que le port 22 est ouvert :</strong></p>
+            <div class="command-box">sudo ufw allow 22/tcp
+sudo ufw status</div>
+        </div>
+
+        <div class="section">
+            <h2>🚀 Démarrer et Accéder à la Machine</h2>
+            <p><strong>Se connecter via SSH à la machine "ubuntu" :</strong></p>
+            <div class="command-box">ssh -i ~/Téléchargements/cle-masse.pem ubuntu@16.171.140.43</div>
+        </div>
+
+        <div class="section">
+            <h2>🛠️ Installer un Serveur Web (Apache)</h2>
+            <p><strong>Mettre à jour le système :</strong></p>
+            <div class="command-box">sudo apt update && sudo apt upgrade -y</div>
+            <p><strong>Installer Apache :</strong></p>
+            <div class="command-box">sudo apt install apache2 -y</div>
+            <p><strong>Démarrer le service Apache :</strong></p>
+            <div class="command-box">sudo systemctl start apache2</div>
+            <p><strong>Activer Apache au démarrage :</strong></p>
+            <div class="command-box">sudo systemctl enable apache2</div>
+            <p><strong>Vérifier le statut :</strong></p>
+            <div class="command-box">sudo systemctl status apache2</div>
+        </div>
+
+        <div class="section">
+            <h2>📦 Zipper les Dossiers (Sites)</h2>
+            <p><strong>Sur votre machine locale, créer une archive de votre site :</strong></p>
+            <div class="command-box">zip -r monsite.zip monsite/</div>
+        </div>
+
+        <div class="section">
+            <h2>📤 Envoyer vers le Serveur Distant avec SCP</h2>
+            <p><strong>Transférer le fichier zippé vers la machine "ubuntu" :</strong></p>
+            <div class="command-box">scp -i ~/Téléchargements/cle-masse.pem monsite.zip ubuntu@16.171.140.43:~</div>
+        </div>
+
+        <div class="section">
+            <h2>📂 Dézipper et Déployer le Site</h2>
+            <p><strong>Se connecter au serveur :</strong></p>
+            <div class="command-box">ssh -i ~/Téléchargements/cle-masse.pem ubuntu@16.171.140.43</div>
+            <p><strong>Installer unzip (si nécessaire) :</strong></p>
+            <div class="command-box">sudo apt install unzip -y</div>
+            <p><strong>Dézipper le site :</strong></p>
+            <div class="command-box">unzip monsite.zip</div>
+            <p><strong>Supprimer les anciens fichiers et copier le nouveau site dans /var/www/html/ :</strong></p>
+            <div class="command-box">sudo rm -rf /var/www/html/*
+sudo cp -r monsite/* /var/www/html/</div>
+            <p><strong>Donner les permissions appropriées :</strong></p>
+            <div class="command-box">sudo chown -R www-data:www-data /var/www/html/
+sudo chmod -R 755 /var/www/html/</div>
+            <p><strong>Redémarrer Apache :</strong></p>
+            <div class="command-box">sudo systemctl restart apache2</div>
+        </div>
+
+        <div class="section">
+            <h2>🌍 Accéder au Site depuis N'importe Quel Appareil</h2>
+            <p>Le site est maintenant en ligne et accessible depuis n'importe quel appareil connecté à Internet, même si vous n'êtes pas dans le même réseau !</p>
+            <p><strong>Ouvrir un navigateur et accéder à :</strong></p>
+            <div class="command-box">http://16.171.140.43</div>
+            <p>ou</p>
+            <div class="command-box">https://16.171.140.43</div>	
+            <p>Votre site est maintenant visible par tous !</p>
+        </div>
+
+        <div class="section">
+            <h2>📋 Résumé des Commandes Essentielles</h2>
+            <ul>
+                <li><strong>Modifier permissions de la clé :</strong> <code>chmod 600 ~/Téléchargements/cle-masse.pem</code></li>
+                <li><strong>Connexion SSH :</strong> <code>ssh -i ~/Téléchargements/cle-masse.pem ubuntu@16.171.140.43</code></li>
+                <li><strong>Transfert SCP :</strong> <code>scp -i ~/Téléchargements/cle-masse.pem monsite.zip ubuntu@16.171.140.43:~</code></li>
+                <li><strong>Dézipper :</strong> <code>unzip monsite.zip</code></li>
+                <li><strong>Copier dans /var/www/html/ :</strong> <code>sudo cp -r monsite/* /var/www/html/</code></li>
+                <li><strong>Redémarrer Apache :</strong> <code>sudo systemctl restart apache2</code></li>
+                <li><strong>Accéder au site :</strong> <code>http://16.171.140.43</code></li>
+            </ul>
+        </div>
+
+        <div class="prof">
+            <h2>Nos remerciements</h2>
+            <p>
+                Nous adressons nos sincères remerciements à notre professeur,
+                <strong>M. Alain Tchana</strong>, pour son engagement constant,
+                sa pédagogie remarquable et sa passion pour l'enseignement.
+                Grâce à lui, nous avons découvert les bases du développement web,
+                mais aussi l'importance du partage et de la transmission du savoir.
+            </p>
+        </div>
+
+        <footer><p>Bon apprentissage à toutes et à tous !</p>
+          <br>
+          <p>Rédigé par <strong>Mr. MASSE MASSE PAUL - BASTHYLLE</strong></p>
+        </footer>
+
+    </div>
+</body>
+</html>

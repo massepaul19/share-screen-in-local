@@ -1,5 +1,5 @@
 // ========================================
-// public/app.js - Avec demandes de partage et sélection d'écrans
+// public/app.js - Version avec système de demande de partage
 // ========================================
 
 // ===== CONFIGURATION =====
@@ -18,16 +18,14 @@ let state = {
   myName: '',
   hostId: null,
   iceServers: [],
-  statsInterval: null,
-  isFullscreen: false,
-  availableScreens: [] // Pour stocker les écrans disponibles
+  isFullscreen: false
 };
 
 // ===== ÉLÉMENTS DOM =====
 const elements = {
   nameInput: document.getElementById('nameInput'),
   shareBtn: document.getElementById('shareBtn'),
-  requestBtn: document.getElementById('requestBtn'),
+  requestBtn: document.getElementById('requestBtn'),  // ✅ AJOUTÉ
   stopBtn: document.getElementById('stopBtn'),
   videoContainer: document.getElementById('videoContainer'),
   userCount: document.getElementById('userCount'),
@@ -36,6 +34,13 @@ const elements = {
   connectionText: document.getElementById('connectionText'),
   alertContainer: document.getElementById('alertContainer')
 };
+
+// ===== GESTIONNAIRES =====
+let chatManager = null;
+let shareRequestManager = null; 
+let p2pCallManager = null;  
+let p2pCallUI = null;
+let p2pUsersManager = null; // ✅ AJOUTÉ
 
 // ========================================
 // UTILITAIRES
@@ -57,6 +62,9 @@ function showAlert(message, type = 'info', duration = 5000) {
   }
 }
 
+// Exposer showAlert globalement pour le chat
+window.showAlert = showAlert;
+
 async function fetchICEServers() {
   try {
     const response = await fetch('/api/ice-servers');
@@ -71,182 +79,6 @@ async function fetchICEServers() {
     ];
   }
 }
-
-// ========================================
-// MODALS
-// ========================================
-
-function showRequestModal() {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `
-    <div class="modal-content">
-      <h3>📢 Demander à partager</h3>
-      <p>Entrez votre nom pour envoyer une demande au participant qui partage actuellement.</p>
-      <input type="text" id="modalNameInput" placeholder="Votre nom" maxlength="30" autofocus>
-      <div class="modal-buttons">
-        <button class="btn-secondary" onclick="closeModal()">Annuler</button>
-        <button class="btn-primary" onclick="sendShareRequest()">Envoyer la demande</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  
-  // Focus sur l'input
-  setTimeout(() => {
-    document.getElementById('modalNameInput').focus();
-  }, 100);
-  
-  // Envoyer avec Enter
-  document.getElementById('modalNameInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      sendShareRequest();
-    }
-  });
-}
-
-function showScreenSelectionModal(screens) {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  
-  const screensHTML = screens.map((screen, index) => `
-    <div class="screen-option" data-index="${index}">
-      <input type="radio" name="screenChoice" id="screen${index}" value="${index}" ${index === 0 ? 'checked' : ''}>
-      <label for="screen${index}">
-        <strong>Écran ${index + 1}</strong>
-        <span>${screen.label || 'Écran disponible'}</span>
-      </label>
-    </div>
-  `).join('');
-  
-  modal.innerHTML = `
-    <div class="modal-content">
-      <h3>🖥️ Choisissez l'écran à partager</h3>
-      <p>Sélectionnez l'écran ou la fenêtre que vous souhaitez partager :</p>
-      <div class="screen-options">
-        ${screensHTML}
-      </div>
-      <div class="modal-buttons">
-        <button class="btn-secondary" onclick="closeModal()">Annuler</button>
-        <button class="btn-primary" onclick="confirmScreenSelection()">Partager cet écran</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-}
-
-function showRequestNotification(requesterName, requesterId) {
-  const notification = document.createElement('div');
-  notification.className = 'notification-overlay';
-  notification.innerHTML = `
-    <div class="notification-content">
-      <h3>🔔 Nouvelle demande</h3>
-      <p><strong>${requesterName}</strong> souhaite partager son écran.</p>
-      <p class="notification-hint">Accepter arrêtera votre partage actuel.</p>
-      <div class="notification-buttons">
-        <button class="btn-danger" onclick="denyShareRequest('${requesterId}', '${requesterName}')">
-          ❌ Refuser
-        </button>
-        <button class="btn-success" onclick="acceptShareRequest('${requesterId}', '${requesterName}')">
-          ✅ Accepter
-        </button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(notification);
-  
-  // Auto-fermeture après 30 secondes
-  setTimeout(() => {
-    if (document.body.contains(notification)) {
-      denyShareRequest(requesterId, requesterName);
-    }
-  }, 30000);
-}
-
-function closeModal() {
-  const modals = document.querySelectorAll('.modal-overlay, .notification-overlay');
-  modals.forEach(modal => modal.remove());
-}
-
-window.closeModal = closeModal;
-
-// ========================================
-// GESTION DES DEMANDES DE PARTAGE
-// ========================================
-
-window.sendShareRequest = function() {
-  const nameInput = document.getElementById('modalNameInput');
-  const requesterName = nameInput.value.trim() || state.myName || `User-${socket.id.slice(0, 4)}`;
-  
-  if (!requesterName) {
-    showAlert('Veuillez entrer votre nom', 'warning');
-    return;
-  }
-  
-  console.log('📤 Envoi demande de partage:', requesterName);
-  socket.emit('send-share-request', {
-    name: requesterName,
-    targetHostId: state.hostId
-  });
-  
-  closeModal();
-  showAlert('Demande envoyée ! En attente de réponse...', 'info', 10000);
-};
-
-window.acceptShareRequest = function(requesterId, requesterName) {
-  console.log('✅ Acceptation demande de:', requesterName);
-  
-  // Arrêter le partage actuel
-  stopSharing();
-  
-  socket.emit('accept-share-request', {
-    requesterId: requesterId,
-    requesterName: requesterName
-  });
-  
-  closeModal();
-  showAlert(`Partage transféré à ${requesterName}`, 'success');
-};
-
-window.denyShareRequest = function(requesterId, requesterName) {
-  console.log('❌ Refus demande de:', requesterName);
-  
-  socket.emit('deny-share-request', {
-    requesterId: requesterId
-  });
-  
-  closeModal();
-  showAlert(`Demande de ${requesterName} refusée`, 'info');
-};
-
-// ========================================
-// ÉVÉNEMENTS SOCKET - DEMANDES
-// ========================================
-
-socket.on('share-request-received', (data) => {
-  console.log('🔔 Demande reçue de:', data.requesterName);
-  showRequestNotification(data.requesterName, data.requesterId);
-});
-
-socket.on('share-request-accepted', () => {
-  console.log('✅ Votre demande a été acceptée !');
-  showAlert('Demande acceptée ! Vous pouvez maintenant partager.', 'success');
-  
-  // Afficher le bouton de partage
-  elements.requestBtn.style.display = 'none';
-  elements.shareBtn.style.display = 'flex';
-  elements.shareBtn.disabled = false;
-  
-  // Auto-déclencher le partage après 1 seconde
-  setTimeout(() => {
-    elements.shareBtn.click();
-  }, 1000);
-});
-
-socket.on('share-request-denied', () => {
-  console.log('❌ Votre demande a été refusée');
-  showAlert('Demande refusée par l\'hôte', 'warning');
-});
 
 // ========================================
 // GESTION DU PLEIN ÉCRAN
@@ -355,8 +187,46 @@ socket.on('connect', () => {
   elements.connectionText.textContent = 'Connecté';
   elements.connectionStatus.style.background = '#d1fae5';
   
-  state.myName = elements.nameInput.value.trim() || `User-${socket.id.slice(0, 4)}`;
-  socket.emit('register', { name: state.myName });
+  const defaultName = `User-${socket.id.slice(0, 4).toUpperCase()}`;
+  state.myName = defaultName;
+  socket.emit('register', { name: defaultName });
+  
+  // Initialiser le chat après la connexion
+  if (!chatManager) {
+    chatManager = new ChatManager(socket);
+    window.chatManager = chatManager;
+  }
+  
+  // ✅ INITIALISER LE GESTIONNAIRE DE DEMANDES
+  if (!shareRequestManager) {
+    shareRequestManager = new ShareRequestManager(socket, state, elements);
+    window.shareRequestManager = shareRequestManager;
+  }
+
+  // ✅ INITIALISER LES APPELS P2P ICI
+  if (!p2pCallManager) {
+    p2pCallManager = new P2PCallManager(socket);
+    p2pCallUI = new P2PCallUI(p2pCallManager);
+    p2pCallManager.setUI(p2pCallUI);
+    
+    // Exposer globalement
+    window.p2pCallManager = p2pCallManager;
+    window.p2pCallUI = p2pCallUI;
+    
+    console.log('✅ Gestionnaires d\'appels P2P initialisés');
+  }
+
+  // ✅ Initialiser P2P Users Manager
+  if (!p2pUsersManager) {
+    p2pUsersManager = new P2PUsersManager(socket);
+    window.p2pUsersManager = p2pUsersManager;
+    console.log('✅ Gestionnaire de liste P2P initialisé');
+  }
+
+  // Initialiser le gestionnaire de réactions vidéo
+  if (typeof initVideoReactions === 'function') {
+    initVideoReactions(socket);
+  }
 });
 
 socket.on('disconnect', () => {
@@ -381,25 +251,44 @@ socket.on('initial-state', (initialState) => {
     elements.sharingStatus.textContent = `${initialState.hostName} partage son écran`;
     
     if (!initialState.isYouHost) {
-      // Afficher le bouton "Demander à partager"
+      // ✅ AFFICHER LE BOUTON "DEMANDER À PARTAGER"
       elements.shareBtn.style.display = 'none';
       elements.requestBtn.style.display = 'flex';
       
+      if (window.videoReactionManager) {
+        window.videoReactionManager.show();
+      }
+
       showAlert(`${initialState.hostName} partage actuellement`, 'info');
       console.log('👁️ Envoi viewer-ready vers hôte:', initialState.hostId);
       socket.emit('viewer-ready', { hostId: initialState.hostId });
     } else {
       state.isSharing = true;
-      // Si vous êtes l'hôte, seul le bouton "stop" doit être visible
       elements.shareBtn.style.display = 'none';
-      elements.requestBtn.style.display = 'none';
       elements.stopBtn.style.display = 'flex';
+      if (window.videoReactionManager) {
+        window.videoReactionManager.show();
+      }
     }
   }
 });
 
 socket.on('user-count-update', (data) => {
   elements.userCount.textContent = data.count;
+});
+
+socket.on('host-name-updated', (data) => {
+  if (state.hostId) {
+    elements.sharingStatus.textContent = `${data.newName} partage son écran`;
+  }
+});
+
+// Mettre à jour le nom pour le partage d'écran
+elements.nameInput.addEventListener('change', () => {
+  const newName = elements.nameInput.value.trim();
+  if (newName) {
+    state.myName = newName;
+  }
 });
 
 // ========================================
@@ -410,10 +299,6 @@ elements.shareBtn.addEventListener('click', async () => {
   state.myName = elements.nameInput.value.trim() || `User-${socket.id.slice(0, 4)}`;
   console.log('📤 Demande de partage pour:', state.myName);
   socket.emit('request-share', { name: state.myName });
-});
-
-elements.requestBtn.addEventListener('click', () => {
-  showRequestModal();
 });
 
 socket.on('share-approved', async () => {
@@ -441,9 +326,12 @@ socket.on('share-approved', async () => {
 
     state.isSharing = true;
     elements.shareBtn.style.display = 'none';
-    elements.requestBtn.style.display = 'none';
+    elements.requestBtn.style.display = 'none';  // ✅ CACHER LE BOUTON DE DEMANDE
     elements.stopBtn.style.display = 'flex';
     elements.sharingStatus.textContent = 'Vous partagez votre écran';
+    if (window.videoReactionManager) {
+      window.videoReactionManager.show();
+    }
     showAlert('Partage démarré !', 'success');
 
     state.localStream.getVideoTracks()[0].addEventListener('ended', () => {
@@ -487,7 +375,7 @@ function displayLocalVideo() {
 // ========================================
 
 socket.on('viewer-joined', async (data) => {
-  console.log('👁️ Nouveau viewer rejoint:', data.viewerId.slice(0, 6));
+  console.log('👁️ Nouveau viewer rejoint:', data.viewerName || data.viewerId.slice(0, 6));
   if (!state.isSharing || !state.localStream) {
     console.warn('⚠️ Pas de stream local disponible');
     return;
@@ -500,8 +388,15 @@ socket.on('host-started-sharing', (data) => {
   console.log('🎥 Hôte commence à partager:', data.hostName);
   state.hostId = data.hostId;
   elements.sharingStatus.textContent = `${data.hostName} partage son écran`;
+  
+  // ✅ AFFICHER LE BOUTON "DEMANDER À PARTAGER"
   elements.shareBtn.style.display = 'none';
   elements.requestBtn.style.display = 'flex';
+  
+  if (window.videoReactionManager) {
+    window.videoReactionManager.show();
+  }
+
   showAlert(`${data.hostName} partage maintenant`, 'info');
   
   console.log('👁️ Envoi viewer-ready vers hôte:', data.hostId);
@@ -515,9 +410,7 @@ async function createPeerConnection(peerId, isInitiator) {
     iceServers: state.iceServers,
     sdpSemantics: 'unified-plan',
     bundlePolicy: 'max-bundle',
-    rtcpMuxPolicy: 'require',
-    iceTransportPolicy: 'all',
-    iceCandidatePoolSize: 10
+    rtcpMuxPolicy: 'require'
   });
   
   state.peerConnections.set(peerId, pc);
@@ -542,14 +435,6 @@ async function createPeerConnection(peerId, isInitiator) {
 
   pc.oniceconnectionstatechange = () => {
     console.log(`[${peerId.slice(0, 6)}] ICE state: ${pc.iceConnectionState}`);
-    
-    if (pc.iceConnectionState === 'failed') {
-      console.error(`❌ ICE failed avec ${peerId.slice(0, 6)}`);
-      socket.emit('webrtc-error', {
-        error: 'ICE connection failed',
-        peerId: peerId
-      });
-    }
   };
 
   pc.onicecandidate = (event) => {
@@ -564,11 +449,11 @@ async function createPeerConnection(peerId, isInitiator) {
   };
 
   if (isInitiator && state.localStream) {
-    console.log(`[${peerId.slice(0, 6)}] Ajout des tracks au peer (${state.localStream.getTracks().length} tracks)`);
+    console.log(`[${peerId.slice(0, 6)}] Ajout des tracks au peer`);
     
     state.localStream.getTracks().forEach(track => {
-      const sender = pc.addTrack(track, state.localStream);
-      console.log(`  ✅ Track ajouté: ${track.kind} (${track.label})`);
+      pc.addTrack(track, state.localStream);
+      console.log(`  ✅ Track ajouté: ${track.kind}`);
     });
 
     try {
@@ -579,7 +464,7 @@ async function createPeerConnection(peerId, isInitiator) {
       
       await pc.setLocalDescription(offer);
       
-      console.log(`[${peerId.slice(0, 6)}] 📤 Envoi offer (${offer.sdp.length} bytes)`);
+      console.log(`[${peerId.slice(0, 6)}] 📤 Envoi offer`);
       
       socket.emit('webrtc-offer', {
         offer: offer,
@@ -596,19 +481,18 @@ async function createPeerConnection(peerId, isInitiator) {
   } else {
     pc.ontrack = (event) => {
       console.log(`[${peerId.slice(0, 6)}] ✅ Track reçu: ${event.track.kind}`);
-      console.log(`[${peerId.slice(0, 6)}] Streams disponibles:`, event.streams.length);
-      console.log(`[${peerId.slice(0, 6)}] Track readyState:`, event.track.readyState);
       
       if (event.streams && event.streams[0]) {
         console.log(`[${peerId.slice(0, 6)}] 📺 Affichage du stream...`);
         displayRemoteVideo(event.streams[0]);
+        if (window.videoReactionManager) {
+          window.videoReactionManager.show();
+        }
         showAlert('Affichage du partage', 'success');
         
         setTimeout(() => {
           showVideoHint('Cliquez pour agrandir en plein écran 🔍');
         }, 2000);
-      } else {
-        console.warn(`[${peerId.slice(0, 6)}] ⚠️ Aucun stream dans l'événement track`);
       }
     };
   }
@@ -618,12 +502,6 @@ async function createPeerConnection(peerId, isInitiator) {
 
 function displayRemoteVideo(stream) {
   console.log('📺 Affichage vidéo distante');
-  console.log('  Tracks:', stream.getTracks().length);
-  console.log('  Active:', stream.active);
-  
-  stream.getTracks().forEach(track => {
-    console.log(`  - ${track.kind}: ${track.readyState} (${track.label})`);
-  });
   
   elements.videoContainer.innerHTML = '';
   const video = document.createElement('video');
@@ -637,21 +515,6 @@ function displayRemoteVideo(stream) {
     showAlert('Cliquez sur la vidéo pour démarrer la lecture', 'warning');
   });
   
-  video.onloadedmetadata = () => {
-    console.log('✅ Métadonnées chargées:', video.videoWidth, 'x', video.videoHeight);
-    if (video.videoWidth === 0) {
-      console.error('⚠️ Largeur vidéo = 0, problème de stream');
-    }
-  };
-  
-  video.onplay = () => {
-    console.log('▶️ Vidéo en lecture');
-  };
-  
-  video.onerror = (e) => {
-    console.error('❌ Erreur élément vidéo:', e);
-  };
-  
   elements.videoContainer.appendChild(video);
 }
 
@@ -664,11 +527,8 @@ socket.on('webrtc-offer', async (data) => {
   
   try {
     const pc = await createPeerConnection(data.from, false);
-    
-    console.log('  Définition RemoteDescription...');
     await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
     
-    console.log('  Création Answer...');
     const answer = await pc.createAnswer({
       offerToReceiveAudio: false,
       offerToReceiveVideo: true
@@ -676,7 +536,6 @@ socket.on('webrtc-offer', async (data) => {
     
     await pc.setLocalDescription(answer);
     
-    console.log('  📤 Envoi Answer');
     socket.emit('webrtc-answer', {
       answer: answer,
       to: data.from
@@ -700,13 +559,7 @@ socket.on('webrtc-answer', async (data) => {
       console.log('  ✅ RemoteDescription définie');
     } catch (err) {
       console.error('❌ Erreur setRemoteDescription:', err);
-      socket.emit('webrtc-error', {
-        error: err.message,
-        peerId: data.from
-      });
     }
-  } else {
-    console.warn('⚠️ PeerConnection non trouvée pour', data.from.slice(0, 6));
   }
 });
 
@@ -716,7 +569,7 @@ socket.on('webrtc-ice', async (data) => {
     try {
       await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
       if (!pc._iceReceived) {
-        console.log(`🧊 Premier ICE candidate reçu de ${data.from.slice(0, 6)}`);
+        console.log(`🧊 ICE candidate reçu de ${data.from.slice(0, 6)}`);
         pc._iceReceived = true;
       }
     } catch (err) {
@@ -741,13 +594,11 @@ function stopSharing() {
   if (state.localStream) {
     state.localStream.getTracks().forEach(track => {
       track.stop();
-      console.log('  ✅ Track arrêté:', track.kind);
     });
     state.localStream = null;
   }
 
-  state.peerConnections.forEach((pc, peerId) => {
-    console.log('  🗑️ Fermeture peer:', peerId.slice(0, 6));
+  state.peerConnections.forEach((pc) => {
     pc.close();
   });
   state.peerConnections.clear();
@@ -757,9 +608,13 @@ function stopSharing() {
   state.isSharing = false;
   elements.shareBtn.style.display = 'flex';
   elements.shareBtn.disabled = false;
-  elements.shareBtn.innerHTML = '<span>📹</span><span>Partager mon écran</span>'; // Correction pour la cohérence
-  elements.requestBtn.style.display = 'none';
+  elements.shareBtn.innerHTML = '<span>📹</span><span>Partager mon écran</span>';
+  elements.requestBtn.style.display = 'none';  // ✅ CACHER LE BOUTON DE DEMANDE
   elements.stopBtn.style.display = 'none';
+
+  if (window.videoReactionManager) {
+    window.videoReactionManager.hide();
+  }
 
   elements.videoContainer.innerHTML = `
     <div class="placeholder">
@@ -770,9 +625,7 @@ function stopSharing() {
   `;
 
   elements.sharingStatus.textContent = 'Aucun partage actif';
-  if (socket.id === state.hostId) { // N'afficher l'alerte que si c'est l'hôte qui arrête
-    showAlert('Partage arrêté', 'info');
-  }
+  showAlert('Partage arrêté', 'info');
 }
 
 socket.on('host-stopped-sharing', (data) => {
@@ -786,10 +639,15 @@ socket.on('host-stopped-sharing', (data) => {
   state.peerConnections.clear();
   state.hostId = null;
 
+  // ✅ RÉAFFICHER LE BOUTON "PARTAGER MON ÉCRAN"
   elements.shareBtn.style.display = 'flex';
   elements.shareBtn.disabled = false;
-  elements.requestBtn.style.display = 'none'; // Assurez-vous que le bouton de demande est masqué
+  elements.requestBtn.style.display = 'none';
   elements.sharingStatus.textContent = 'Aucun partage actif';
+
+  if (window.videoReactionManager) {
+    window.videoReactionManager.hide();
+  }
 
   if (!state.isSharing) {
     elements.videoContainer.innerHTML = `
@@ -799,9 +657,51 @@ socket.on('host-stopped-sharing', (data) => {
         <p>${data.message}</p>
       </div>
     `;
-    // L'alerte est maintenant affichée uniquement pour les viewers
-    showAlert('Le partage a été arrêté par l\'hôte', 'info');
+    showAlert(data.message, 'info');
   }
+});
+
+// ✅ NOUVEAU: Arrêt forcé du partage (quand l'hôte accepte une demande)
+socket.on('force-stop-share', (data) => {
+  console.log('⚠️ Arrêt forcé du partage:', data.reason);
+  
+  if (state.isFullscreen) {
+    exitFullscreen();
+  }
+
+  if (state.localStream) {
+    state.localStream.getTracks().forEach(track => {
+      track.stop();
+    });
+    state.localStream = null;
+  }
+
+  state.peerConnections.forEach((pc) => {
+    pc.close();
+  });
+  state.peerConnections.clear();
+
+  state.isSharing = false;
+  elements.shareBtn.style.display = 'flex';
+  elements.shareBtn.disabled = false;
+  elements.shareBtn.innerHTML = '<span>📹</span><span>Partager mon écran</span>';
+  elements.requestBtn.style.display = 'none';
+  elements.stopBtn.style.display = 'none';
+
+  if (window.videoReactionManager) {
+    window.videoReactionManager.hide();
+  }
+
+  elements.videoContainer.innerHTML = `
+    <div class="placeholder">
+      <div class="placeholder-icon">🖥️</div>
+      <h3>Partage transféré</h3>
+      <p>${data.message}</p>
+    </div>
+  `;
+
+  elements.sharingStatus.textContent = 'Aucun partage actif';
+  showAlert(data.message, 'success');
 });
 
 // ========================================
@@ -811,18 +711,6 @@ socket.on('host-stopped-sharing', (data) => {
 window.addEventListener('beforeunload', () => {
   if (state.isSharing) {
     stopSharing();
-  }
-});
-
-window.addEventListener('orientationchange', () => {
-  if (state.isFullscreen) {
-    setTimeout(() => {
-      const video = elements.videoContainer.querySelector('video');
-      if (video) {
-        video.style.width = '100%';
-        video.style.height = '100%';
-      }
-    }, 100);
   }
 });
 

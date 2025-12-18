@@ -4,43 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <meta name="theme-color" content="#2563eb">
-  <meta name="description" content="Application de partage d'écran en temps réel sur réseau local - Multi-navigateurs">
-  <meta name="author" content="MASSE MASSE PAUL - BASTHYLLE">
-  <title>ESTLC Share Screen - Partage d'écran réseau local</title>
+  <title>ESTLC Share Screen - Partage & Appels</title>
   
-  <link rel="stylesheet" href="static/style.css">
-  <link rel="stylesheet" href="static/style_chat.css">
-  <link rel="stylesheet" href="static/emoji.css">
-  <link rel="stylesheet" href="static/videoReactions.css">  
+  <link rel="stylesheet" href="static/styles/style.css">
+  <link rel="stylesheet" href="static/styles/style_chat.css">
+  <link rel="stylesheet" href="static/styles/emoji.css">
+  <link rel="stylesheet" href="static/styles/videoReactions.css">
+  <link rel="stylesheet" href="static/styles/videocall.css">
+  <link rel="stylesheet" href="static/styles/audiocall.css">
+  <link rel="stylesheet" href="static/styles/p2p-call.css">
   
+  <!-- Socket.io -->
   <script src="/socket.io/socket.io.js"></script>
+  <script src="static/js/mediasoup-client.min.js"></script>
   
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
 </head>
 <body>
-  <!-- Statut de connexion -->
   <div class="connection-status" id="connectionStatus">
     <span class="status-dot"></span>
     <span id="connectionText">Connexion...</span>
   </div>
 
-  <!-- Bouton Chat flottant -->
-  <button class="chat-btn" id="chatBtn" aria-label="Ouvrir le chat">
+  <button class="chat-btn" id="chatBtn">
     <span>💬</span>
     <span id="unreadBadge" class="unread-badge">0</span>
   </button>
 
-  <!-- Conteneur principal -->
   <div class="container">
     <header>
       <h1>ESTLC Share Screen</h1>
-      <p class="subtitle">
-        Réseau local • Multi-navigateurs • Temps réel • Version 1.2 Pro
-      </p>
+      <p class="subtitle">Réseau local • Multi-navigateurs • Version 2.0 Pro</p>
     </header>
 
     <div id="alertContainer"></div>
@@ -56,40 +51,84 @@
       </div>
     </div>
 
-    <div class="controls">
-      <input 
-        type="text" 
-        id="nameInput" 
-        placeholder="Votre nom (optionnel)"
-        maxlength="30"
-        autocomplete="name"
-        aria-label="Votre nom"
-      >
-      <button class="btn-primary" id="shareBtn" aria-label="Partager mon écran">
-        <span>📹</span>
-        <span>Partager mon écran</span>
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="screen">
+        <span>🖥️</span><span>Partage d'écran</span>
       </button>
-      
-      <!-- ✅ NOUVEAU: Bouton pour demander à partager -->
-      <button class="btn-secondary" id="requestBtn" style="display: none;" aria-label="Demander à partager">
-        <span>📢</span>
-        <span>Demander à partager</span>
+      <button class="mode-tab" data-mode="video">
+        <span>🎥</span><span>Appel vidéo</span>
       </button>
-      
-      <button class="btn-danger" id="stopBtn" style="display: none;" aria-label="Arrêter le partage">
-        <span>⏹️</span>
-        <span>Arrêter le partage</span>
+      <button class="mode-tab" data-mode="audio">
+        <span>🎤</span><span>Appel audio</span>
+      </button>
+      <button class="mode-tab" data-mode="p2p">
+        <span>📞</span><span>Appels P2P</span>
       </button>
     </div>
 
-    <div id="videoContainer" role="region" aria-label="Zone de partage d'écran">
-      <div class="placeholder">
-        <div class="placeholder-icon">🖥️</div>
-        <h3>En attente de partage d'écran</h3>
-        <p>Cliquez sur "Partager mon écran" pour commencer</p>
-        <p style="margin-top: 10px; font-size: 0.85em; opacity: 0.7;">
-          💡 Astuce : Cliquez sur la vidéo pour l'agrandir en plein écran
-        </p>
+    <!-- PARTAGE D'ÉCRAN -->
+    <div class="mode-content" id="screenMode">
+      <div class="controls">
+        <input type="text" id="nameInput" placeholder="Votre nom" maxlength="30">
+        <button class="btn-primary" id="shareBtn"><span>📹</span><span>Partager</span></button>
+        <button class="btn-secondary" id="requestBtn" style="display:none;"><span>📢</span><span>Demander</span></button>
+        <button class="btn-danger" id="stopBtn" style="display:none;"><span>⏹️</span><span>Arrêter</span></button>
+      </div>
+      <div id="videoContainer">
+        <div class="placeholder">
+          <div class="placeholder-icon">🖥️</div>
+          <h3>En attente de partage</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPELS P2P -->
+    <div class="mode-content" id="p2pMode" style="display:none;">
+      <div class="controls">
+        <input type="text" id="p2pNameInput" placeholder="Votre nom" maxlength="30">
+      </div>
+      
+      <!-- Liste des utilisateurs -->
+      <div id="p2pUserListContainer" class="p2p-user-list-container">
+        <h3>👥 Utilisateurs en ligne</h3>
+        <div id="p2pUserList" class="p2p-user-list">
+          <!-- Les utilisateurs seront ajoutés dynamiquement ici -->
+        </div>
+      </div>
+      
+      <!-- Placeholder si personne n'est en ligne -->
+      <div id="p2pPlaceholder" class="p2p-placeholder">
+        <div class="placeholder-icon">👥</div>
+        <h3>Aucun autre utilisateur en ligne</h3>
+        <p>Les utilisateurs connectés apparaîtront ici</p>
+      </div>
+    </div>
+
+    <!-- APPEL VIDÉO DE GROUPE -->
+    <div class="mode-content" id="videoMode" style="display:none;">
+      <div class="controls">
+        <input type="text" id="videoRoomInput" placeholder="Nom salle" maxlength="50">
+        <input type="text" id="videoNameInput" placeholder="Votre nom" maxlength="30">
+        <button class="btn-primary" id="joinVideoBtn"><span>🎥</span><span>Rejoindre</span></button>
+      </div>
+      <div class="video-placeholder">
+        <div class="placeholder-icon">🎥</div>
+        <h3>Appel vidéo de groupe</h3>
+        <p>Entrez un nom de salle et rejoignez</p>
+      </div>
+    </div>
+
+    <!-- APPEL AUDIO DE GROUPE -->
+    <div class="mode-content" id="audioMode" style="display:none;">
+      <div class="controls">
+        <input type="text" id="audioRoomInput" placeholder="Nom conférence" maxlength="50">
+        <input type="text" id="audioNameInput" placeholder="Votre nom" maxlength="30">
+        <button class="btn-primary" id="joinAudioBtn"><span>🎤</span><span>Rejoindre</span></button>
+      </div>
+      <div class="audio-placeholder">
+        <div class="placeholder-icon">🎤</div>
+        <h3>Conférence audio</h3>
+        <p>Entrez un nom de conférence et rejoignez</p>
       </div>
     </div>
 
@@ -98,66 +137,63 @@
         <div class="footer-left">
           <p class="footer-name">MASSE MASSE PAUL - BASTHYLLE</p>
           <a href="mailto:paolocisse6@gmail.com" class="footer-email">
-            <span>📧</span>
-            <span>paolocisse6@gmail.com</span>
+            <span>📧</span><span>paolocisse6@gmail.com</span>
           </a>
         </div>
         <div class="footer-right">
-          <p class="footer-year">© 2025 ESTLC Dept-informatique - Tous droits réservés</p>
+          <p class="footer-year">© 2025 ESTLC Dept-informatique</p>
         </div>
       </div>
     </footer>
   </div>
-
-  <!-- Panel Chat Amélioré avec Swipe -->
+ 
+  <!-- CHAT -->
   <div class="chat-panel" id="chatPanel">
     <div class="chat-header">
-      <button class="close-chat-btn" id="closeChatBtn" aria-label="Fermer le chat">✕</button>
+      <button class="close-chat-btn" id="closeChatBtn">✕</button>
       <div class="chat-header-content">
-        <h3>💬 Chat en direct</h3>
+        <h3>💬 Chat</h3>
         <div class="chat-user-name" id="chatUserName">Invité</div>
       </div>
     </div>
-    
     <div class="chat-messages" id="chatMessages">
       <div class="chat-welcome">
         <p>👋 Bienvenue dans le chat !</p>
-        <p>Communiquez avec tous les participants en temps réel.</p>
-        <p style="margin-top: 8px; font-size: 0.85em; opacity: 0.8;">
-          💡 Utilisez @ pour mentionner quelqu'un
-        </p>
-        <p style="font-size: 0.85em; opacity: 0.8;">
-          👉 Glissez un message vers la droite pour y répondre
-        </p>
       </div>
     </div>
-    
     <div class="chat-input-container">
       <div class="chat-input-wrapper">
-        <!-- Indicateur de réponse (créé dynamiquement) -->
-        <!-- Suggestions d'utilisateurs (créées dynamiquement) -->
-        
-        <textarea 
-          id="chatInput" 
-          placeholder="Tapez votre message... (@ pour mentionner, swipe pour répondre)" 
-          rows="1"
-          maxlength="500"
-        ></textarea>
+        <textarea id="chatInput" placeholder="Message..." rows="1" maxlength="500"></textarea>
       </div>
-      
-      <!-- ✅ Le bouton emoji sera inséré automatiquement ici par emoji.js -->
-      
-      <button id="sendBtn" class="send-btn" aria-label="Envoyer le message">
-        <i class="fas fa-paper-plane"></i>
-      </button>
+      <button id="sendBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
 
-  <!-- ✅ IMPORTANT: Charger dans l'ordre -->
-  <script src="static/VideoReactions.js"></script>
-  <script src="static/emoji.js"></script>
-  <script src="static/chat.js"></script>
-  <script src="static/shareRequestManager.js"></script>
-  <script src="static/app.js"></script>
+  <!-- ========================================
+       SCRIPTS - ORDRE IMPORTANT
+       ======================================== -->
+  
+  <!-- 1. Dépendances de base -->
+  <script src="static/js/VideoReactions.js"></script>
+  <script src="static/js/emoji.js"></script>
+  <script src="static/js/chat.js"></script>
+  <script src="static/js/shareRequestManager.js"></script>
+  
+  <!-- 2. Appels de groupe (Mediasoup) -->
+  <script src="static/js/videocallUI.js"></script>
+  <script src="static/js/audiocallUI.js"></script>
+  <script src="static/js/videocall.js"></script>
+  <script src="static/js/audiocall.js"></script>
+  
+  <!-- 3. Appels P2P (WebRTC) -->
+  <script src="static/js/p2p-call.js"></script>
+  <script src="static/js/p2p-call-ui.js"></script>
+  <script src="static/js/p2p-users.js"></script>
+  
+  <!-- Appel du tableau de bord -->
+  <script src="static/js/dashboard.js"></script>
+
+  <!-- 5. Script principal (app.js) - DOIT ÊTRE EN DERNIER -->
+  <script src="static/js/app.js"></script>
 </body>
 </html>

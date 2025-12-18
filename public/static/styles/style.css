@@ -1902,3 +1902,258 @@ video {
     width: 100%;
   }
 }
+
+/* ========================================
+   RESPONSIVE CHAT - MOBILE
+   ======================================== */
+@media (max-width: 768px) {
+  .chat-panel {
+    width: 100%;
+    right: -100%;
+  }
+  
+  .chat-btn {
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
+  }
+  
+  .chat-header {
+    padding: 16px 20px;
+    gap: 12px;
+  }
+  
+  .chat-header h3 {
+    font-size: 16px;
+  }
+  
+  .chat-user-name {
+    font-size: 12px;
+  }
+  
+  .close-chat-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+  
+  .chat-messages {
+    padding: 20px 16px;
+  }
+  
+  .chat-welcome {
+    padding: 40px 20px;
+  }
+  
+  .chat-welcome p:first-child {
+    font-size: 16px;
+  }
+  
+  .chat-welcome p:last-child {
+    font-size: 14px;
+  }
+  
+  .message-text {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+  
+  .chat-input-container {
+    padding: 16px;
+  }
+  
+  #chatInput {
+    font-size: 14px;
+    padding: 10px 16px;
+  }
+  
+  .send-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .unread-badge {
+    min-width: 22px;
+    height: 22px;
+    font-size: 11px;
+    top: -4px;
+    right: -4px;
+  }
+}
+
+/* ========================================
+   ONGLETS DE MODE (VIDEO/AUDIO)
+   ======================================== */
+
+.mode-tabs {
+  display: flex;
+  gap: 0;
+  margin: 20px 20px 0;
+  border-bottom: 3px solid var(--gray-light);
+  background: var(--gray-light);
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 16px 24px;
+  border: none;
+  background: transparent;
+  color: var(--gray);
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-bottom: 3px solid transparent;
+  position: relative;
+}
+
+.mode-tab:hover {
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.mode-tab.active {
+  color: var(--primary);
+  background: var(--white);
+  border-bottom-color: var(--primary);
+  box-shadow: 0 -2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.mode-tab span:first-child {
+  font-size: 1.3em;
+}
+
+.mode-content {
+  animation: fadeInMode 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInMode {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Placeholders pour vidéo et audio */
+.video-placeholder,
+.audio-placeholder {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: 12px;
+  padding: 60px 40px;
+  text-align: center;
+  color: var(--white);
+  margin: 20px 20px 0;
+  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.3);
+  border: 3px solid var(--primary-dark);
+}
+
+.video-placeholder .placeholder-icon,
+.audio-placeholder .placeholder-icon {
+  font-size: 5em;
+  margin-bottom: 25px;
+  opacity: 0.9;
+  animation: float 3s ease-in-out infinite;
+}
+
+.video-placeholder h3,
+.audio-placeholder h3 {
+  color: var(--white);
+  margin-bottom: 12px;
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.video-placeholder p,
+.audio-placeholder p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1em;
+  font-weight: 500;
+}
+
+/* ========================================
+   RESPONSIVE MODE TABS - TABLETTE
+   ======================================== */
+@media (max-width: 1024px) {
+  .mode-tabs {
+    margin: 15px 20px 0;
+  }
+  
+  .mode-tab {
+    padding: 14px 20px;
+    font-size: 0.9em;
+  }
+}
+
+/* ========================================
+   RESPONSIVE MODE TABS - MOBILE
+   ======================================== */
+@media (max-width: 768px) {
+  .mode-tabs {
+    margin: 15px 15px 0;
+  }
+  
+  .mode-tab {
+    padding: 12px 10px;
+    font-size: 0.85em;
+  }
+  
+  .mode-tab span:last-child {
+    display: none;
+  }
+  
+  .mode-tab span:first-child {
+    font-size: 1.5em;
+  }
+  
+  .video-placeholder,
+  .audio-placeholder {
+    margin: 15px 15px 0;
+    padding: 40px 20px;
+  }
+  
+  .video-placeholder .placeholder-icon,
+  .audio-placeholder .placeholder-icon {
+    font-size: 3.5em;
+  }
+  
+  .video-placeholder h3,
+  .audio-placeholder h3 {
+    font-size: 1.2em;
+  }
+  
+  .video-placeholder p,
+  .audio-placeholder p {
+    font-size: 0.9em;
+  }
+}
+
+/* ========================================
+   RESPONSIVE MODE TABS - PETIT MOBILE
+   ======================================== */
+@media (max-width: 480px) {
+  .mode-tab {
+    padding: 10px 8px;
+  }
+  
+  .mode-tab span:first-child {
+    font-size: 1.3em;
+  }
+  
+  .video-placeholder,
+  .audio-placeholder {
+    padding: 30px 15px;
+  }
+}

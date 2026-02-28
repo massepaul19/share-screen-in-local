@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESTLC SHARE SCREEN - Session</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="static/styles/style.css">
+  <link rel="stylesheet" href="static/styles/style_chat.css">
+  <link rel="stylesheet" href="static/styles/style_notes.css">
+  <link rel="stylesheet" href="static/styles/style_participants.css">
+  <link rel="stylesheet" href="static/styles/emoji.css">
+  <link rel="stylesheet" href="static/styles/responsive.css">
+</head>
+<body class="room-page">
+
+  <!-- TOP BAR -->
+  <header class="room-header">
+    <div class="room-header-left"> 
+      <div class="brand-logo small">
+        <img src="static/images/logo.png" alt="ESTLC" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span style="display:none">ESS</span>
+      </div>
+      <div class="room-info">
+        <span class="room-id" id="roomIdDisplay">12345</span>
+        <div class="room-meta">
+          <span><i class="fa-solid fa-users"></i> <span id="participantCount">0</span> participant(s)</span>
+          <span class="share-badge" id="shareBadge" style="display:none">
+            <i class="fa-solid fa-display"></i> Partage actif
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="room-header-right">
+      <button class="btn-icon" id="btnSettings" title="Paramètres">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+      <button class="btn-header-tab" id="btnParticipants">
+        <i class="fa-solid fa-users"></i> Participants
+      </button>
+      <button class="btn-header-tab" id="btnNotes">
+        <i class="fa-solid fa-pen-to-square"></i> Notes
+      </button>
+      <button class="btn-header-tab" id="btnChat">
+        <i class="fa-regular fa-comment"></i> Chat
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN ROOM LAYOUT -->
+  <div class="room-layout">
+
+    <!-- VIDEO AREA -->
+    <div class="video-area" id="videoArea">
+
+      <!-- SCREEN SHARE (main) -->
+      <div class="screen-share-container" id="screenShareContainer">
+        <div class="screen-share-label">
+          <div class="screen-share-avatar">
+            <i class="fa-solid fa-display"></i>
+          </div>
+          <div>
+            <strong id="sharerName">Personne</strong>
+            <span class="live-badge">● En direct</span>
+          </div>
+        </div>
+        <button class="expand-btn" id="expandBtn" title="Plein écran">
+          <i class="fa-solid fa-expand"></i>
+        </button>
+        <!-- Ici sera rendu le flux vidéo -->
+        <div class="screen-placeholder" id="screenPlaceholder">
+          <i class="fa-solid fa-display"></i>
+          <p>Bienvenue dans <strong>ESTLC SHARING SCREEN</strong><br>En attente du partage...</p>
+        </div>
+        <video id="screenVideo" autoplay playsinline style="display:none; width:100%; height:100%; object-fit:contain;"></video>
+      </div>
+
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="side-panel" id="sidePanel">
+
+      <!-- PARTICIPANTS PANEL -->
+      <div class="panel-content" id="participantsPanel">
+        <div class="panel-header">
+          <i class="fa-solid fa-users"></i>
+          <h3>Participants</h3>
+          <span class="participant-count-badge" id="sideParticipantCount">0</span>
+        </div>
+        <div class="view-toggle">
+          <button class="view-btn active" id="btnViewList"><i class="fa-solid fa-list"></i> Liste</button>
+          <button class="view-btn" id="btnViewGrid"><i class="fa-solid fa-border-all"></i> Grille</button>
+        </div>
+        <div class="participants-list" id="participantsList">
+          <!-- Dynamique -->
+        </div>
+      </div>
+
+      <!-- CHAT PANEL -->
+      <div class="panel-content hidden" id="chatPanel">
+        <div class="panel-header">
+          <i class="fa-regular fa-comment"></i>
+          <h3>Chat</h3>
+          <span class="msg-count" id="msgCount">0</span>
+        </div>
+        
+        <!-- NOUVEAU : Onglets de navigation -->
+        <div class="chat-tabs" id="chatTabs">
+          <button class="chat-tab active" id="tabPublic">Général</button>
+          <button class="chat-tab" id="tabPrivate" style="display:none;">Privé <span id="privateBadge" class="badge"></span></button>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <!-- Messages dynamiques -->
+        </div>
+        
+        <!-- NOUVEAU : Conteneur Chat Privé (Liste + Conversation) -->
+        <div class="private-chat-container hidden" id="privateChatContainer">
+          <!-- VUE 1 : Liste des discussions -->
+          <div id="privateChatList" class="private-chat-list">
+            <div class="chat-welcome"><p>Aucune conversation privée.</p></div>
+          </div>
+          <!-- VUE 2 : Conversation active -->
+          <div id="privateChatView" class="private-chat-view hidden">
+            <!-- Géré par JS -->
+          </div>
+        </div>
+
+        <div class="chat-input-container">
+          <input type="file" id="fileInput" style="display: none;">
+          <button class="attach-btn" title="Joindre un fichier (bientôt disponible)"><i class="fa-solid fa-paperclip"></i></button>
+          <div class="chat-input-wrapper" id="chatInputWrapper">
+             <textarea id="chatInput" placeholder="Envoyer un message..." rows="1"></textarea>
+          </div>
+          <!-- Le bouton emoji sera inséré ici par emoji.js -->
+          <button class="send-btn" id="sendBtn" title="Envoyer le message"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </div>
+      <div class="panel-content hidden" id="chatPanelContainer"></div> <!-- Placeholder, le vrai chat est maintenant un panneau coulissant -->
+
+    </div>
+  </div>
+
+  <!-- BOTTOM CONTROLS -->
+  <footer class="room-footer">
+    <div class="controls-bar">
+      <button class="ctrl-btn" id="btnMic" title="Couper le micro">
+        <i class="fa-solid fa-microphone"></i>
+      </button>
+      <button class="ctrl-btn" id="btnCam" title="Couper la caméra">
+        <i class="fa-solid fa-video"></i>
+      </button>
+      <!-- Le bouton de partage est maintenant géré par app.js -->
+      <button class="ctrl-btn" id="btnScreen" title="Partager l'écran">
+        <i class="fa-solid fa-display"></i>
+      </button>
+      <button class="ctrl-btn" id="btnRequest" title="Demander à partager" style="display: none;">
+        <i class="fa-solid fa-hand"></i>
+      </button>
+      <button class="ctrl-btn" id="btnRaiseHand" title="Lever la main">
+        <i class="fa-regular fa-hand-paper"></i>
+      </button>
+      <button class="ctrl-btn" id="btnSpeaker" title="Couper le son (Haut-parleur)">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+      <div class="react-wrapper">
+        <button class="ctrl-btn" id="btnReact" title="Réagir">
+          <i class="fa-regular fa-face-smile"></i>
+        </button>
+        <div class="reactions-picker"></div>
+      </div>
+      <button class="ctrl-btn danger" id="btnHangup" title="Raccrocher">
+        <i class="fa-solid fa-phone-slash"></i>
+      </button>
+    </div>
+    <div class="controls-spacer"></div>
+  </footer>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content settings-modal">
+      <div class="modal-header">
+        <h3>Paramètres</h3>
+        <button class="close-modal-btn" id="closeSettingsBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-group">
+          <label>Apparence</label>
+          <div class="setting-item">
+            <span>Mode Sombre</span>
+            <label class="switch">
+              <input type="checkbox" id="darkModeToggle">
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-group">
+          <label>Notifications</label>
+          <div class="setting-item">
+            <span>Sons de notification</span>
+            <label class="switch">
+              <input type="checkbox" id="soundToggle" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-group">
+          <label>Profil</label>
+          <div class="setting-item-col">
+            <span>Nom d'affichage</span>
+            <div class="input-group">
+              <input type="text" id="settingsNameInput" placeholder="Votre nom">
+              <button id="saveNameBtn" class="btn-primary small">Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts de l'application -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="static/js/chat.js"></script>
+  <script src="static/js/private-chat.js"></script>
+  <script src="static/js/emoji.js"></script>
+  <script src="static/js/notes-manager.js"></script>
+  <script src="static/js/shareRequestManager.js"></script>
+  <script src="static/js/app.js"></script>
+  <script src="static/js/participant-admin.js"></script>
+
+  <!-- Script de contrôle de l'interface de la salle -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidePanel = document.getElementById('sidePanel');
+      const videoArea = document.getElementById('videoArea');
+
+      // Gestion du panneau latéral (participants/chat) avec Toggle
+      function showPanel(panel) {
+        const panelEl = document.getElementById(panel + 'Panel');
+        const btnEl = document.getElementById('btn' + panel.charAt(0).toUpperCase() + panel.slice(1));
+
+        // Si le panneau est déjà ouvert et actif, on le ferme (Toggle)
+        if (btnEl.classList.contains('active') && sidePanel.classList.contains('open')) {
+           sidePanel.classList.remove('open');
+           btnEl.classList.remove('active');
+           return;
+        }
+
+        // Sinon on ouvre/change
+        document.querySelectorAll('.panel-content').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.btn-header-tab').forEach(b => b.classList.remove('active'));
+        
+        if (panelEl) panelEl.classList.remove('hidden');
+        if (btnEl) btnEl.classList.add('active');
+        
+        if (sidePanel) sidePanel.classList.add('open');
+      }
+
+      function toggleFullscreen() {
+        const container = document.getElementById('screenShareContainer');
+        if (!document.fullscreenElement) {
+          if (container && container.requestFullscreen) {
+            container.requestFullscreen().catch(err => {
+              alert(`Erreur lors du passage en plein écran: ${err.message} (${err.name})`);
+            });
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          }
+        }
+      }
+
+      // Listeners pour les boutons du panneau
+      const btnParticipants = document.getElementById('btnParticipants');
+      const btnChat = document.getElementById('btnChat');
+      const btnHangup = document.getElementById('btnHangup');
+      const expandBtn = document.getElementById('expandBtn');
+      const notifTag = document.getElementById('notifTag');
+
+      if (btnParticipants) btnParticipants.addEventListener('click', () => showPanel('participants'));
+      if (btnChat) btnChat.addEventListener('click', () => showPanel('chat'));
+      
+      if (btnHangup) {
+        btnHangup.addEventListener('click', () => {
+          if (confirm('Voulez-vous vraiment quitter la session ?')) {
+            window.location.href = 'index.html';
+          }
+        });
+      }
+
+      if (expandBtn) {
+        expandBtn.addEventListener('click', toggleFullscreen);
+      }
+
+      if (notifTag) {
+        const closeBtn = notifTag.querySelector('button');
+        if(closeBtn) {
+          closeBtn.addEventListener('click', () => notifTag.style.display = 'none');
+        }
+      }
+      
+      // Initialiser le gestionnaire d'émojis pour le chat
+      const chatInput = document.getElementById('chatInput');
+      const sendBtn = document.getElementById('sendBtn');
+      if (chatInput && sendBtn && typeof EmojiManager !== 'undefined') {
+          new EmojiManager(chatInput, sendBtn);
+      }
+
+      // Initialiser l'état du panneau latéral.
+      // Sur mobile, on ne l'ouvre pas par défaut. Sur bureau, on montre les participants.
+      if (window.innerWidth <= 768) {
+        // S'assurer que le panneau est fermé et qu'aucun bouton n'est actif.
+        sidePanel.classList.remove('open');
+        document.querySelectorAll('.btn-header-tab').forEach(b => b.classList.remove('active'));
+      } else {
+        // Comportement normal pour les grands écrans.
+        showPanel('participants');
+      }
+
+      // Gérer le changement d'état du plein écran (ex: touche Echap)
+      document.addEventListener('fullscreenchange', () => {
+        const container = document.getElementById('screenShareContainer');
+        const icon = document.querySelector('#expandBtn i');
+        if (document.fullscreenElement) {
+          if(container) container.classList.add('fullscreen');
+          if(icon) icon.className = 'fa-solid fa-compress';
+        } else {
+          if(container) container.classList.remove('fullscreen');
+          if(icon) icon.className = 'fa-solid fa-expand';
+        }
+      });
+
+      // ===== GESTION DES PARAMÈTRES =====
+      const btnSettings = document.getElementById('btnSettings');
+      const settingsModal = document.getElementById('settingsModal');
+      const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+      const darkModeToggle = document.getElementById('darkModeToggle');
+      const settingsNameInput = document.getElementById('settingsNameInput');
+      const saveNameBtn = document.getElementById('saveNameBtn');
+
+      // Ouvrir/Fermer Modal
+      if (btnSettings) btnSettings.addEventListener('click', () => {
+        // Pré-remplir le nom actuel
+        const params = new URLSearchParams(window.location.search);
+        const currentName = (window.chatManager && window.chatManager.userName) || params.get('name') || '';
+        if(settingsNameInput) settingsNameInput.value = currentName;
+        
+        settingsModal.style.display = 'flex';
+      });
+
+      if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => {
+        settingsModal.style.display = 'none';
+      });
+
+      // Fermer en cliquant en dehors
+      window.addEventListener('click', (e) => {
+        if (e.target === settingsModal) settingsModal.style.display = 'none';
+      });
+
+      // Thème Sombre (Persistance)
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if(darkModeToggle) darkModeToggle.checked = true;
+      }
+
+      if (darkModeToggle) {
+        darkModeToggle.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+          } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+          }
+        });
+      }
+
+      // Changer de nom
+      if (saveNameBtn && settingsNameInput) {
+        saveNameBtn.addEventListener('click', () => {
+          const newName = settingsNameInput.value.trim();
+          if (newName && window.socket) {
+            window.socket.emit('update-name', { name: newName });
+            if(window.chatManager) window.chatManager.setUserName(newName);
+            alert('Nom mis à jour !');
+            settingsModal.style.display = 'none';
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

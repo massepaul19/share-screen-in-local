@@ -16,7 +16,10 @@ class EmojiManager {
       smileys: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴'],
       gestures: ['👍', '👎', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👋', '🤚', '🖐', '✋', '🖖', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪', '🦾', '🦿', '🦵', '🦶'],
       hearts: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟'],
-      objects: ['💻', '⌨️', '🖥️', '🖨️', '🖱️', '💾', '💿', '📀', '📱', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏰', '⏲️', '🕰️', '⌛', '⏳', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳'],
+      activities: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🪃', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛼', '🛷', '⛸️', '🥌', '🎿', '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '⛹️', '🤺', '🤾', '🏌️', '🏇', '🧘', '🎮', '🕹️', '🎰', '🎲', '🧩', '🧸', '♠️', '♥️', '♦️', '♣️', '♟️', '🃏', '🀄', '🎴', '🎭', '🖼️', '🎨', '🧵', '🧶'],
+      food: ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🫑', '🌽', '🥕', '🫒', '🧄', '🧅', '🥔', '🍠', '🥐', '🥯', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🧈', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭', '🍔', '🍟', '🍕', '🫓', '🥪', '🥙', '🧆', '🌮', '🌯', '🫔', '🥗', '🥘', '🫕', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '🥜', '🍯', '🥛', '🍼', '☕', '🫖', '🍵', '🧃', '🥤', '🧋', '🍺', '🍻', '🥂', '🍷', '🥃', '🍸', '🍹', '🧉', '🍾', '🧊', '🥄', '🍴', '🍽️', '🥣', '🥡', '🥢', '🧂'],
+      travel: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍️', '🛵', '🦽', '🦼', '🛺', '🚲', '🛴', '🛹', '🛼', '🚏', '🛣️', '🛤️', '🛢️', '⛽', '🚨', '🚥', '🚦', '🛑', '🚧', '⚓', '⛵', '🛶', '🚤', '🛳️', '⛴️', '🛥️', '🚢', '✈️', '🛩️', '🛫', '🛬', '🪂', '💺', '🚁', '🚟', '🚠', '🚡', '🛰️', '🚀', '🛸', '🛎️', '🧳', '⌛', '⏳', '⌚', '⏰', '⏱️', '⏲️', '🕰️', '🕛', '🕧', '🕐', '🕜', '🕑', '🕝', '🕒', '🕞', '🕓', '🕟', '🕔', '🕠', '🕕', '🕡', '🕖', '🕢', '🕗', '🕣', '🕘', '🕤', '🕙', '🕥', '🕚', '🕦', '🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘', '🌙', '🌚', '🌛', '🌜', '🌡️', '☀️', '🌝', '🌞', '🪐', '⭐', '🌟', '🌠', '🌌', '☁️', '⛅', '⛈️', '🌤️', '🌥️', '🌦️', '🌧️', '🌨️', '🌩️', '🌪️', '🌫️', '🌬️', '🌀', '🌈', '🌂', '☂️', '☔', '⛱️', '⚡', '❄️', '☃️', '⛄', '☄️', '🔥', '💧', '🌊'],
+      objects: ['💻', '⌨️', '🖥️', '🖨️', '🖱️', '💾', '💿', '📀', '📱', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏰', '⏲️', '🕰️', '⌛', '⏳', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎', '⚖️', '🧱', '🪨', '🪵', '🛖', '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨', '🏩', '🏪', '🏫', '🏬', '🏭', '🏯', '🏰', '💒', '🗼', '🗽', '⛪', '🕌', '🛕', '🕍', '⛩️', '🕋', '⛲', '⛺', '🌁', '🌃', '🏙️', '🌄', '🌅', '🌆', '🌇', '🌉', '♨️', '🎠', '🎡', '🎢', '💈', '🎪', '🚂', '🚃', '🚄', '🚅', '🚆', '🚇', '🚈', '🚉', '🚊', '🚝', '🚞', '🚋', '🚌', '🚍', '🚎', '🚐', '🚑', '🚒', '🚓', '🚔', '🚕', '🚖', '🚗', '🚘', '🚙', '🛻', '🚚', '🚛', '🚜', '🏎️', '🏍️', '🛵', '🦽', '🦼', '🛺', '🚲', '🛴', '🛹', '🛼', '🚏', '🛣️', '🛤️', '🛢️', '⛽', '🚨', '🚥', '🚦', '🛑', '🚧', '⚓', '⛵', '🛶', '🚤', '🛳️', '⛴️', '🛥️', '🚢', '✈️', '🛩️', '🛫', '🛬', '🪂', '💺', '🚁', '🚟', '🚠', '🚡', '🛰️', '🚀', '🛸', '🛎️', '🧳'],
       symbols: ['✅', '❌', '⭐', '🌟', '✨', '⚡', '🔥', '💯', '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🥈', '🥉', '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🪃', '🥅', '⛳']
     };
     
@@ -40,8 +43,14 @@ class EmojiManager {
     this.emojiButton.setAttribute('type', 'button');
     this.emojiButton.setAttribute('title', 'Ajouter un emoji');
     
-    // Insérer le bouton juste avant le bouton d'envoi
-    this.sendButton.parentNode.insertBefore(this.emojiButton, this.sendButton);
+    // Insérer le bouton à côté du bouton de fichier (après)
+    const attachBtn = this.chatInput.closest('.chat-input-container').querySelector('.attach-btn');
+    if (attachBtn && attachBtn.nextSibling) {
+        attachBtn.parentNode.insertBefore(this.emojiButton, attachBtn.nextSibling);
+    } else {
+        // Fallback: insérer avant le bouton d'envoi
+        this.sendButton.parentNode.insertBefore(this.emojiButton, this.sendButton);
+    }
     console.log('✅ Bouton emoji créé et inséré');
   }
 
@@ -59,6 +68,9 @@ class EmojiManager {
       { name: 'smileys', icon: '😊', label: 'Smileys' },
       { name: 'gestures', icon: '👍', label: 'Gestes' },
       { name: 'hearts', icon: '❤️', label: 'Cœurs' },
+      { name: 'activities', icon: '⚽', label: 'Activités' },
+      { name: 'food', icon: '🍔', label: 'Nourriture' },
+      { name: 'travel', icon: '🚗', label: 'Voyage' },
       { name: 'objects', icon: '💻', label: 'Objets' },
       { name: 'symbols', icon: '⭐', label: 'Symboles' }
     ];
@@ -139,6 +151,13 @@ class EmojiManager {
         }
       });
     });
+    
+    // Fermer le picker si on clique sur un emoji (optionnel, selon préférence)
+    // this.emojiPicker.addEventListener('click', (e) => {
+    //   if (e.target.classList.contains('emoji-item')) {
+    //      // this.closePicker(); // Décommenter pour fermer après sélection
+    //   }
+    // });
     
     // Fermer le picker si on clique ailleurs
     document.addEventListener('click', (e) => {
@@ -224,50 +243,5 @@ class EmojiManager {
 // ========================================
 // INITIALISATION GLOBALE
 // ========================================
-
-// Variable globale pour accéder au gestionnaire
-window.emojiManager = null;
-
-// Fonction d'initialisation
-function initEmojiManager() {
-  const chatInput = document.getElementById('chatInput');
-  const sendBtn = document.getElementById('sendBtn');
-  
-  if (chatInput && sendBtn) {
-    console.log('🎯 Éléments trouvés, création du gestionnaire d\'émojis...');
-    window.emojiManager = new EmojiManager(chatInput, sendBtn);
-    return true;
-  } else {
-    console.warn('⚠️ Éléments du chat non trouvés:', {
-      chatInput: !!chatInput,
-      sendBtn: !!sendBtn
-    });
-    return false;
-  }
-}
-
-// Tentative d'initialisation au chargement du DOM
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 DOM chargé, initialisation des émojis...');
-    setTimeout(() => {
-      if (!initEmojiManager()) {
-        // Réessayer après un délai si les éléments ne sont pas encore présents
-        console.log('🔄 Réessai dans 500ms...');
-        setTimeout(initEmojiManager, 500);
-      }
-    }, 100);
-  });
-} else {
-  // Le DOM est déjà chargé
-  console.log('📄 DOM déjà chargé, initialisation immédiate...');
-  setTimeout(() => {
-    if (!initEmojiManager()) {
-      console.log('🔄 Réessai dans 500ms...');
-      setTimeout(initEmojiManager, 500);
-    }
-  }, 100);
-}
-
 // Exposer la classe globalement pour usage externe si nécessaire
 window.EmojiManager = EmojiManager;

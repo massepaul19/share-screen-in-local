@@ -3,24 +3,39 @@ const { getClientIP, detectBrowser, log } = require('./utils');
 
 // État global
 const globalState = {
-  isSharing: false,
-  hostSocketId: null,
-  hostName: null,
-  connectedUsers: new Map(),
-  activeConnections: new Map(),
-  chatMessages: new Map(), // Stockage des messages pour les réponses
-  startTime: Date.now()
+  connectedUsers: new Map(), // socket.id -> UserInfo (reste global pour retrouver les users)
+  rooms: new Map() // roomId -> RoomState (Nouveau : état par salle)
 };
 
+// ===== UTILITAIRE: Récupérer l'état d'une salle =====
+function getRoomState(roomId) {
+  if (!globalState.rooms.has(roomId)) {
+    globalState.rooms.set(roomId, {
+      isSharing: false,
+      hostSocketId: null,
+      hostName: null,
+      activeConnections: new Map(),
+      chatMessages: new Map(),
+      disconnectTimeouts: new Map(),
+      startTime: Date.now(),
+      adminSocketId: null // NOUVEAU : ID de l'administrateur de la salle
+    });
+  }
+  return globalState.rooms.get(roomId);
+}
+
 // ===== UTILITAIRE: Diffuser la liste des utilisateurs actifs =====
-function broadcastUsersUpdate(io) {
-  const users = Array.from(globalState.connectedUsers.values()).map(user => ({
+function broadcastUsersUpdate(io, roomId) {
+  const users = Array.from(globalState.connectedUsers.values())
+    .filter(user => user.room === roomId)
+    .map(user => ({
     id: user.socketId,
-    name: user.name
+    name: user.name,
+    handRaised: user.handRaised,
+    micOn: user.micOn
   }));
   
-  io.emit('users-update', users);
-  log(`👥 USERS UPDATE | ${users.length} utilisateur(s) actif(s)`);
+  io.to(roomId).emit('users-update', users);
 }
 
 function setupSocketHandlers(io) {
@@ -37,40 +52,83 @@ function setupSocketHandlers(io) {
       name: defaultName,
       ip: clientIP,
       browser,
-      joinedAt: new Date().toISOString()
+      joinedAt: new Date().toISOString(),
+      userId: null, // Sera rempli au register
+      room: null,
+      handRaised: false,
+      micOn: true // Par défaut activé
     });
 
-    // Envoyer l'état initial
-    socket.emit('initial-state', {
-      isSharing: globalState.isSharing,
-      hostName: globalState.hostName,
-      hostId: globalState.hostSocketId,
-      isYouHost: socket.id === globalState.hostSocketId,
-      connectedUsers: globalState.connectedUsers.size
-    });
-
-    // Diffuser la liste des utilisateurs mise à jour
-    broadcastUsersUpdate(io);
+    // Note : On n'envoie plus 'initial-state' ici car on ne connaît pas encore la salle.
+    // Il sera envoyé dans l'événement 'register'.
 
     // ===== REGISTER USER =====
     socket.on('register', (data) => {
       const userName = data.name?.trim() || `User-${socket.id.slice(0, 4)}`;
+      const userId = data.userId;
+      const roomId = data.room || 'general';
       
       // Mettre à jour l'utilisateur
       const user = globalState.connectedUsers.get(socket.id);
       if (user) {
         user.name = userName;
+        user.userId = userId;
+        user.room = roomId;
         globalState.connectedUsers.set(socket.id, user);
       }
 
-      log(`👤 REGISTER | ${userName} (${browser})`);
+      const roomState = getRoomState(roomId);
       
-      io.emit('user-count-update', { 
-        count: globalState.connectedUsers.size 
+      // Si l'utilisateur est marqué comme admin ou si c'est le premier, il devient admin
+      if (data.isAdmin || !roomState.adminSocketId) {
+        roomState.adminSocketId = socket.id;
+      }
+
+      // GESTION RECONNEXION HÔTE
+      // Si un timeout de déconnexion existe pour cet userId, on l'annule
+      if (userId && roomState.disconnectTimeouts.has(userId)) {
+        log(`🔄 RECONNEXION HÔTE | ${userName} est revenu`);
+        clearTimeout(roomState.disconnectTimeouts.get(userId));
+        roomState.disconnectTimeouts.delete(userId);
+        
+        // Si c'était l'hôte, on met à jour le socket ID de l'hôte
+        if (roomState.isSharing) {
+           roomState.hostSocketId = socket.id;
+        }
+      }
+
+      socket.join(roomId);
+      log(`👤 REGISTER | ${userName} (${browser}) -> Room: ${roomId}`);
+      
+      // Envoyer l'état initial de la salle spécifique
+      socket.emit('initial-state', {
+        isSharing: roomState.isSharing,
+        hostName: roomState.hostName,
+        hostId: roomState.hostSocketId,
+        isYouHost: socket.id === roomState.hostSocketId,
+        connectedUsers: Array.from(globalState.connectedUsers.values()).filter(u => u.room === roomId).length,
+        // NOUVEAU : Liste complète pour le Mesh Audio
+        connectedUsersList: Array.from(globalState.connectedUsers.values())
+          .filter(u => u.room === roomId)
+          .map(u => ({ id: u.socketId, name: u.name, handRaised: u.handRaised }))
+      });
+
+      // NOUVEAU : Notifier les autres pour initier l'audio P2P
+      socket.to(roomId).emit('user-joined', {
+        id: socket.id,
+        name: userName,
+        handRaised: false
+      });
+
+      // Compter les utilisateurs dans cette salle
+      const roomUsersCount = Array.from(globalState.connectedUsers.values()).filter(u => u.room === roomId).length;
+
+      io.to(roomId).emit('user-count-update', { 
+        count: roomUsersCount 
       });
       
       // Diffuser la liste mise à jour
-      broadcastUsersUpdate(io);
+      broadcastUsersUpdate(io, roomId);
     });
 
     // ===== UPDATE NAME (depuis le chat) =====
@@ -84,35 +142,49 @@ function setupSocketHandlers(io) {
         globalState.connectedUsers.set(socket.id, user);
         
         log(`✏️  UPDATE NAME | ${oldName} → ${newName}`);
+        const roomState = getRoomState(user.room);
         
         // Si l'utilisateur est en train de partager, mettre à jour le nom affiché
-        if (socket.id === globalState.hostSocketId) {
-          globalState.hostName = newName;
-          io.emit('host-name-updated', {
+        if (socket.id === roomState.hostSocketId) {
+          roomState.hostName = newName;
+          io.to(user.room).emit('host-name-updated', {
             newName: newName
           });
         }
         
         // Message système optionnel pour informer du changement de nom
-        io.emit('system-message', {
+        io.to(user.room).emit('system-message', {
           type: 'name-change',
           text: `${oldName} est maintenant ${newName}`,
           timestamp: new Date().toISOString()
         });
         
         // Diffuser la liste des utilisateurs mise à jour
-        broadcastUsersUpdate(io);
+        broadcastUsersUpdate(io, user.room);
+      }
+    });
+
+    // ===== MIC STATUS (Synchronisation) =====
+    socket.on('mic-status', (data) => {
+      const user = globalState.connectedUsers.get(socket.id);
+      if (user) {
+        user.micOn = data.micOn;
+        globalState.connectedUsers.set(socket.id, user);
+        broadcastUsersUpdate(io, user.room);
       }
     });
 
     // ===== REQUEST SHARE =====
     socket.on('request-share', (data) => {
-      if (globalState.isSharing && globalState.hostSocketId !== socket.id) {
-        log(`⛔ SHARE BLOCKED | ${data.name} | Raison: ${globalState.hostName} partage déjà`);
+      const user = globalState.connectedUsers.get(socket.id);
+      const roomState = getRoomState(user.room);
+
+      if (roomState.isSharing && roomState.hostSocketId !== socket.id) {
+        log(`⛔ SHARE BLOCKED | ${data.name} | Raison: ${roomState.hostName} partage déjà`);
         
         socket.emit('share-blocked', {
           reason: 'already-sharing',
-          currentHost: globalState.hostName
+          currentHost: roomState.hostName
         });
         return;
       }
@@ -120,7 +192,7 @@ function setupSocketHandlers(io) {
       log(`✅ SHARE APPROVED | ${data.name} autorisé`);
       
       socket.emit('share-approved', {
-        connectedUsers: globalState.connectedUsers.size - 1
+        connectedUsers: Array.from(globalState.connectedUsers.values()).filter(u => u.room === user.room).length - 1
       });
     });
 
@@ -134,33 +206,35 @@ function setupSocketHandlers(io) {
         user.name = userName;
         globalState.connectedUsers.set(socket.id, user);
       }
-      
-      globalState.isSharing = true;
-      globalState.hostSocketId = socket.id;
-      globalState.hostName = userName;
+
+      const roomState = getRoomState(user.room);
+      roomState.isSharing = true;
+      roomState.hostSocketId = socket.id;
+      roomState.hostName = userName;
 
       log(`🎥 SHARE START | ${userName} partage son écran`);
 
-      socket.broadcast.emit('host-started-sharing', {
+      socket.to(user.room).emit('host-started-sharing', {
         hostName: userName,
         hostId: socket.id
       });
       
       // Diffuser la liste des utilisateurs mise à jour
-      broadcastUsersUpdate(io);
+      broadcastUsersUpdate(io, user.room);
     });
 
     // ===== VIEWER READY =====
     socket.on('viewer-ready', (data) => {
       const viewer = globalState.connectedUsers.get(socket.id);
       const viewerName = viewer?.name || `User-${socket.id.slice(0, 4)}`;
+      const roomState = getRoomState(viewer.room);
       
       log(`👁️  VIEWER READY | ${viewerName} prêt à recevoir`);
       
       const hostSocket = io.sockets.sockets.get(data.hostId);
       if (hostSocket) {
         const connectionId = `${data.hostId}-${socket.id}`;
-        globalState.activeConnections.set(connectionId, {
+        roomState.activeConnections.set(connectionId, {
           hostId: data.hostId,
           viewerId: socket.id,
           viewerName: viewerName,
@@ -184,33 +258,107 @@ function setupSocketHandlers(io) {
 
     // ===== STOP SHARE =====
     socket.on('stop-share', () => {
-      if (socket.id !== globalState.hostSocketId) return;
+      const user = globalState.connectedUsers.get(socket.id);
+      const roomState = getRoomState(user.room);
 
-      const hostName = globalState.hostName;
+      if (socket.id !== roomState.hostSocketId) return;
+
+      const hostName = roomState.hostName;
       
       log(`⏹️  SHARE STOP | ${hostName} a arrêté`);
 
       // Nettoyer les connexions actives
-      for (const [connId, conn] of globalState.activeConnections) {
+      for (const [connId, conn] of roomState.activeConnections) {
         if (conn.hostId === socket.id) {
-          globalState.activeConnections.delete(connId);
+          roomState.activeConnections.delete(connId);
         }
       }
 
-      globalState.isSharing = false;
-      globalState.hostSocketId = null;
-      globalState.hostName = null;
+      roomState.isSharing = false;
+      roomState.hostSocketId = null;
+      roomState.hostName = null;
 
-      io.emit('host-stopped-sharing', {
+      io.to(user.room).emit('host-stopped-sharing', {
         message: `${hostName} a arrêté le partage`,
         previousHost: hostName
       });
+    });
+
+    // ===== ✋ GESTION MAIN LEVÉE =====
+    socket.on('toggle-hand', () => {
+      const user = globalState.connectedUsers.get(socket.id);
+      if (user) {
+        user.handRaised = !user.handRaised;
+        globalState.connectedUsers.set(socket.id, user);
+        
+        log(`✋ HAND | ${user.name} ${user.handRaised ? 'a levé' : 'a baissé'} la main`);
+        
+        // Diffuser la mise à jour à tout le monde
+        io.to(user.room).emit('hand-update', {
+          userId: socket.id,
+          handRaised: user.handRaised,
+          userName: user.name // Ajout du nom pour la notification
+        });
+        
+        // Notifier SPÉCIFIQUEMENT l'hôte avec une alerte
+        const roomState = getRoomState(user.room);
+        if (roomState.hostSocketId && roomState.hostSocketId !== socket.id && user.handRaised) {
+          io.to(roomState.hostSocketId).emit('hand-raised-alert', {
+            userId: socket.id,
+            userName: user.name
+          });
+        }
+        
+        broadcastUsersUpdate(io, user.room);
+      }
+    });
+
+    // ===== 🎙️ GESTION MODÉRATEUR (MUTE/UNMUTE) =====
+    
+    // Couper le micro
+    socket.on('mute-user', (data) => {
+      const requester = globalState.connectedUsers.get(socket.id);
+      const targetId = data.targetId;
+      const roomState = getRoomState(requester.room);
+
+      // Vérifier si le demandeur est l'hôte OU l'admin
+      if (roomState.hostSocketId === socket.id || roomState.adminSocketId === socket.id) {
+        log(`🔇 MUTE | ${requester.name} a coupé le micro de ${targetId.slice(0, 6)}`);
+        io.to(targetId).emit('mute-command', { by: requester.name });
+      }
+    });
+
+    // Autoriser le micro
+    socket.on('allow-mic', (data) => {
+      const requester = globalState.connectedUsers.get(socket.id);
+      const targetId = data.targetId;
+      const roomState = getRoomState(requester.room);
+
+      // Vérifier si le demandeur est l'hôte OU l'admin
+      if (roomState.hostSocketId === socket.id || roomState.adminSocketId === socket.id) {
+        log(`🎤 ALLOW MIC | ${requester.name} autorise ${targetId.slice(0, 6)}`);
+        io.to(targetId).emit('mic-allowed', { by: requester.name });
+      }
+    });
+
+    // Baisser la main d'un utilisateur (par l'hôte)
+    socket.on('lower-hand', (data) => {
+      const requester = globalState.connectedUsers.get(socket.id);
+      const targetId = data.targetId;
+      const roomState = getRoomState(requester.room);
+
+      // Vérifier si le demandeur est l'hôte OU l'admin
+      if (roomState.hostSocketId === socket.id || roomState.adminSocketId === socket.id) {
+        log(`✋ LOWER HAND | ${requester.name} baisse la main de ${targetId.slice(0, 6)}`);
+        io.to(targetId).emit('lower-hand-command', { by: requester.name });
+      }
     });
 
     // ===== WEBRTC SIGNALING =====
     socket.on('webrtc-offer', (data) => {
       const fromUser = globalState.connectedUsers.get(socket.id);
       const toUser = globalState.connectedUsers.get(data.to);
+      const roomState = getRoomState(fromUser.room);
       
       log(`📤 OFFER | ${fromUser?.name || socket.id.slice(0, 6)} → ${toUser?.name || data.to.slice(0, 6)}`);
       
@@ -222,7 +370,7 @@ function setupSocketHandlers(io) {
         });
         
         const connectionId = `${socket.id}-${data.to}`;
-        const conn = globalState.activeConnections.get(connectionId);
+        const conn = roomState.activeConnections.get(connectionId);
         if (conn) {
           conn.status = 'offer-sent';
           conn.offerTime = Date.now();
@@ -235,6 +383,7 @@ function setupSocketHandlers(io) {
     socket.on('webrtc-answer', (data) => {
       const fromUser = globalState.connectedUsers.get(socket.id);
       const toUser = globalState.connectedUsers.get(data.to);
+      const roomState = getRoomState(fromUser.room);
       
       log(`📥 ANSWER | ${fromUser?.name || socket.id.slice(0, 6)} → ${toUser?.name || data.to.slice(0, 6)}`);
       
@@ -246,7 +395,7 @@ function setupSocketHandlers(io) {
         });
         
         const connectionId = `${data.to}-${socket.id}`;
-        const conn = globalState.activeConnections.get(connectionId);
+        const conn = roomState.activeConnections.get(connectionId);
         if (conn) {
           conn.status = 'answer-sent';
           conn.answerTime = Date.now();
@@ -267,11 +416,13 @@ function setupSocketHandlers(io) {
     });
 
     socket.on('webrtc-connected', (data) => {
+      const user = globalState.connectedUsers.get(socket.id);
+      const roomState = getRoomState(user.room);
       const connectionId = data.hostId === socket.id 
         ? `${socket.id}-${data.peerId}`
         : `${data.peerId}-${socket.id}`;
       
-      const conn = globalState.activeConnections.get(connectionId);
+      const conn = roomState.activeConnections.get(connectionId);
       if (conn) {
         conn.status = 'connected';
         conn.connectedAt = Date.now();
@@ -285,11 +436,12 @@ function setupSocketHandlers(io) {
 
     socket.on('webrtc-error', (data) => {
       const user = globalState.connectedUsers.get(socket.id);
+      const roomState = getRoomState(user.room);
       log(`❌ WEBRTC ERROR | ${user?.name || socket.id.slice(0, 6)} | ${data.error}`);
       
-      for (const [connId, conn] of globalState.activeConnections) {
+      for (const [connId, conn] of roomState.activeConnections) {
         if (conn.hostId === socket.id || conn.viewerId === socket.id) {
-          globalState.activeConnections.delete(connId);
+          roomState.activeConnections.delete(connId);
         }
       }
     });
@@ -297,17 +449,16 @@ function setupSocketHandlers(io) {
     // ===== ✨ GESTION DES RÉACTIONS VIDÉO =====
     socket.on('video-reaction', (data) => {
       const user = globalState.connectedUsers.get(socket.id);
-      const userName = data.userName || user?.name || 'Anonyme';
+      const userName = user?.name || 'Anonyme';
 
       log(`✨ REACTION | ${userName} a envoyé ${data.emoji}`);
 
       // Diffuser à tous les autres clients
-      socket.broadcast.emit('video-reaction', {
+      socket.to(user.room).emit('video-reaction', {
         emoji: data.emoji,
         userName: userName
       });
     });
-
 
     // ===== 💬 GESTION DU CHAT AMÉLIORÉ =====
     
@@ -315,6 +466,7 @@ function setupSocketHandlers(io) {
     socket.on('send-message', (data) => {
       const user = globalState.connectedUsers.get(socket.id);
       const userName = user?.name || `User-${socket.id.slice(0, 4)}`;
+      const roomState = getRoomState(user.room);
       
       // Générer un ID unique pour le message
       const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -325,25 +477,35 @@ function setupSocketHandlers(io) {
         senderName: userName,
         text: data.text,
         timestamp: Date.now(),
+        to: data.to || null, // Ajout du destinataire pour le privé
         replyTo: data.replyTo || null // ID du message auquel on répond
       };
       
       // Stocker le message pour les réponses futures
-      globalState.chatMessages.set(messageId, message);
+      roomState.chatMessages.set(messageId, message);
       
       // Log avec indication de réponse
       const logText = data.replyTo 
         ? `💬 REPLY | ${userName} → ${data.text.substring(0, 40)}${data.text.length > 40 ? '...' : ''}`
+        : data.to
+        ? `🔒 PRIVATE | ${userName} → ${data.to.slice(0, 6)}: ${data.text.substring(0, 40)}`
         : `💬 MESSAGE | ${userName}: ${data.text.substring(0, 50)}${data.text.length > 50 ? '...' : ''}`;
       log(logText);
       
-      // Envoyer à tous (y compris l'expéditeur)
-      io.emit('new-message', message);
+      // Routage du message
+      if (data.to) {
+        // Message Privé : Envoyer seulement au destinataire et à l'expéditeur
+        io.to(data.to).emit('new-message', { ...message, isPrivate: true });
+        socket.emit('new-message', { ...message, isPrivate: true });
+      } else {
+        // Message Public : Envoyer à tout le monde dans la salle
+        io.to(user.room).emit('new-message', message);
+      }
       
       // Nettoyer les vieux messages (garder seulement les 100 derniers)
-      if (globalState.chatMessages.size > 100) {
-        const oldestKey = globalState.chatMessages.keys().next().value;
-        globalState.chatMessages.delete(oldestKey);
+      if (roomState.chatMessages.size > 100) {
+        const oldestKey = roomState.chatMessages.keys().next().value;
+        roomState.chatMessages.delete(oldestKey);
       }
     });
 
@@ -353,7 +515,7 @@ function setupSocketHandlers(io) {
       const userName = user?.name || `User-${socket.id.slice(0, 4)}`;
       
       // Envoyer à tous sauf l'expéditeur
-      socket.broadcast.emit('user-typing', {
+      socket.to(user.room).emit('user-typing', {
         userId: socket.id,
         userName: userName,
         isTyping: data.isTyping
@@ -362,7 +524,9 @@ function setupSocketHandlers(io) {
 
     // Demander l'historique des messages (optionnel)
     socket.on('request-chat-history', () => {
-      const messages = Array.from(globalState.chatMessages.values())
+      const user = globalState.connectedUsers.get(socket.id);
+      const roomState = getRoomState(user.room);
+      const messages = Array.from(roomState.chatMessages.values())
         .slice(-50); // Envoyer les 50 derniers messages
       
       socket.emit('chat-history', { messages });
@@ -375,6 +539,7 @@ function setupSocketHandlers(io) {
     socket.on('send-share-request', (data) => {
       const requester = globalState.connectedUsers.get(socket.id);
       const requesterName = data.name || requester?.name || `User-${socket.id.slice(0, 4)}`;
+      const roomState = getRoomState(requester.room);
       
       log(`📥 SHARE REQUEST | ${requesterName} → Hôte ${data.targetHostId.slice(0, 6)}`);
       
@@ -388,7 +553,7 @@ function setupSocketHandlers(io) {
       }
       
       // Vérifier que l'hôte partage toujours
-      if (data.targetHostId !== globalState.hostSocketId) {
+      if (data.targetHostId !== roomState.hostSocketId) {
         log(`   ❌ ${data.targetHostId.slice(0, 6)} ne partage plus`);
         socket.emit('share-request-denied');
         return;
@@ -407,6 +572,7 @@ function setupSocketHandlers(io) {
     socket.on('accept-share-request', (data) => {
       const host = globalState.connectedUsers.get(socket.id);
       const hostName = host?.name || `User-${socket.id.slice(0, 4)}`;
+      const roomState = getRoomState(host.room);
       
       log(`✅ SHARE ACCEPT | ${hostName} accepte ${data.requesterName}`);
       
@@ -416,20 +582,20 @@ function setupSocketHandlers(io) {
       log(`   ✅ ${data.requesterName} notifié de l'acceptation`);
       
       // ✅ ARRÊTER AUTOMATIQUEMENT LE PARTAGE DE L'HÔTE ACTUEL
-      if (socket.id === globalState.hostSocketId) {
+      if (socket.id === roomState.hostSocketId) {
         log(`   ⏹️  Arrêt automatique du partage de ${hostName}`);
         
         // Nettoyer les connexions actives
-        for (const [connId, conn] of globalState.activeConnections) {
+        for (const [connId, conn] of roomState.activeConnections) {
           if (conn.hostId === socket.id) {
-            globalState.activeConnections.delete(connId);
+            roomState.activeConnections.delete(connId);
           }
         }
         
         // Réinitialiser l'état global
-        globalState.isSharing = false;
-        globalState.hostSocketId = null;
-        globalState.hostName = null;
+        roomState.isSharing = false;
+        roomState.hostSocketId = null;
+        roomState.hostName = null;
         
         // Notifier l'hôte d'arrêter son partage
         socket.emit('force-stop-share', {
@@ -454,54 +620,109 @@ function setupSocketHandlers(io) {
       log(`   ✅ Demandeur ${data.requesterId.slice(0, 6)} notifié du refus`);
     });
 
+    // =====  GESTION DU PARTAGE DE FICHIERS =====
+    socket.on('file-share', (data) => {
+      const user = globalState.connectedUsers.get(socket.id);
+      const userName = user?.name || `User-${socket.id.slice(0, 4)}`;
+      
+      log(`📁 FILE | ${userName} partage : ${data.fileName} (${Math.round(data.fileSize/1024)} KB)`);
+      
+      const fileMessage = {
+        id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        senderId: socket.id,
+        senderName: userName,
+        fileName: data.fileName,
+        fileType: data.fileType,
+        fileSize: data.fileSize,
+        fileData: data.fileData, // Base64 ou ArrayBuffer
+        timestamp: Date.now(),
+        to: data.to || null,
+        isPrivate: !!data.to
+      };
+
+      if (data.to) {
+        // === FICHIER PRIVÉ ===
+        // 1. Envoyer au destinataire
+        io.to(data.to).emit('file-shared', fileMessage);
+        // 2. Renvoyer à l'expéditeur (pour qu'il le voie dans son chat)
+        socket.emit('file-shared', fileMessage);
+      } else {
+        // === FICHIER PUBLIC ===
+        // Envoyer à tout le monde dans la room (y compris l'expéditeur)
+        io.in(user.room).emit('file-shared', fileMessage);
+      }
+    });
+
     // ===== DISCONNECT =====
     socket.on('disconnect', () => {
       const user = globalState.connectedUsers.get(socket.id);
       const userName = user?.name || 'Inconnu';
+      const userId = user?.userId;
+      const roomState = user ? getRoomState(user.room) : null;
       
       log(`🔴 DÉCONNEXION | ${userName} (${browser})`);
 
       // Nettoyer les connexions actives
-      for (const [connId, conn] of globalState.activeConnections) {
-        if (conn.hostId === socket.id || conn.viewerId === socket.id) {
-          globalState.activeConnections.delete(connId);
+      if (roomState) {
+        for (const [connId, conn] of roomState.activeConnections) {
+          if (conn.hostId === socket.id || conn.viewerId === socket.id) {
+            roomState.activeConnections.delete(connId);
+          }
+        }
+
+      if (socket.id === roomState.hostSocketId) {
+        log(`⏳ HÔTE DÉCONNECTÉ | Attente de reconnexion (15s)...`);
+        
+        // On ne coupe pas tout de suite, on attend 15s
+        const timeout = setTimeout(() => {
+          if (roomState.isSharing && roomState.hostSocketId === socket.id) {
+            log(`⏹️  TIMEOUT HÔTE | Arrêt du partage`);
+            roomState.isSharing = false;
+            roomState.hostSocketId = null;
+            roomState.hostName = null;
+            roomState.disconnectTimeouts.delete(userId);
+
+            io.to(user.room).emit('host-stopped-sharing', {
+              message: `${userName} s'est déconnecté`,
+              previousHost: userName,
+              reason: 'disconnect'
+            });
+          }
+        }, 15000); // 15 secondes de grâce
+        
+        if (userId) {
+          roomState.disconnectTimeouts.set(userId, timeout);
         }
       }
-
-      if (socket.id === globalState.hostSocketId) {
-        globalState.isSharing = false;
-        globalState.hostSocketId = null;
-        globalState.hostName = null;
-
-        io.emit('host-stopped-sharing', {
-          message: `${userName} s'est déconnecté`,
-          previousHost: userName,
-          reason: 'disconnect'
-        });
       }
 
       globalState.connectedUsers.delete(socket.id);
       
-      io.emit('user-count-update', { 
-        count: globalState.connectedUsers.size 
-      });
-      
-      // Message système de déconnexion (optionnel)
-      io.emit('system-message', {
-        type: 'user-left',
-        text: `${userName} a quitté le chat`,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Diffuser la liste des utilisateurs mise à jour
-      broadcastUsersUpdate(io);
+      if (user && user.room) {
+        const roomUsersCount = Array.from(globalState.connectedUsers.values()).filter(u => u.room === user.room).length;
+        io.to(user.room).emit('user-count-update', { 
+          count: roomUsersCount 
+        });
+        
+        // Message système de déconnexion (optionnel)
+        io.to(user.room).emit('system-message', {
+          type: 'user-left',
+          text: `${userName} a quitté le chat`,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Diffuser la liste des utilisateurs mise à jour
+        broadcastUsersUpdate(io, user.room);
+      }
     });
   });
 
   // ===== TÂCHE PÉRIODIQUE: Diffuser la liste des utilisateurs =====
   setInterval(() => {
-    if (globalState.connectedUsers.size > 0) {
-      broadcastUsersUpdate(io);
+    // On pourrait optimiser en ne le faisant que pour les rooms actives
+    const rooms = new Set(Array.from(globalState.connectedUsers.values()).map(u => u.room));
+    for (const room of rooms) {
+      broadcastUsersUpdate(io, room);
     }
   }, 30000); // Toutes les 30 secondes
 }

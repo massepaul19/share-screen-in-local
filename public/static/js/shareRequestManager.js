@@ -64,47 +64,27 @@ class ShareRequestManager {
   // ========================================
   
   showRequestModal() {
+    const myName = this.state.myName || 'Anonyme';
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
       <div class="modal-content">
-        <h3>📢 Demander à partager</h3>
-        <p>Entrez votre nom pour envoyer une demande au participant qui partage actuellement.</p>
-        <input type="text" id="modalNameInput" placeholder="Votre nom" maxlength="30" autofocus>
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-hand" style="color: var(--warning);"></i> Demander à partager</h3>
+          <button class="close-modal-btn" onclick="window.shareRequestManager.closeModal()">✕</button>
+        </div>
+        <p>Vous êtes sur le point d'envoyer une demande de partage à l'hôte. Votre nom affiché sera <strong>${this.escapeHtml(myName)}</strong>.</p>
+        <p class="notification-hint">Si la demande est acceptée, le partage actuel sera interrompu.</p>
         <div class="modal-buttons">
           <button class="btn-secondary" id="modalCancelBtn">Annuler</button>
-          <button class="btn-primary" id="modalSendBtn">Envoyer la demande</button>
+          <button class="btn-primary" id="modalSendBtn">Confirmer et envoyer</button>
         </div>
       </div>
     `;
     document.body.appendChild(modal);
     
-    // Focus sur l'input
-    setTimeout(() => {
-      const input = document.getElementById('modalNameInput');
-      if (input) input.focus();
-    }, 100);
-    
-    // Event listeners pour le modal
-    const cancelBtn = document.getElementById('modalCancelBtn');
-    const sendBtn = document.getElementById('modalSendBtn');
-    const input = document.getElementById('modalNameInput');
-    
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => this.closeModal());
-    }
-    
-    if (sendBtn) {
-      sendBtn.addEventListener('click', () => this.sendShareRequest());
-    }
-    
-    if (input) {
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          this.sendShareRequest();
-        }
-      });
-    }
+    document.getElementById('modalCancelBtn').addEventListener('click', () => this.closeModal());
+    document.getElementById('modalSendBtn').addEventListener('click', () => this.sendShareRequest());
   }
 
   showRequestNotification(requesterName, requesterId) {
@@ -112,7 +92,7 @@ class ShareRequestManager {
     notification.className = 'notification-overlay';
     notification.innerHTML = `
       <div class="notification-content">
-        <h3>🔔 Nouvelle demande</h3>
+        <h3><i class="fa-solid fa-bell"></i> Nouvelle demande</h3>
         <p><strong>${requesterName}</strong> souhaite partager son écran.</p>
         <p class="notification-hint">Accepter arrêtera votre partage actuel.</p>
         <div class="notification-buttons">
@@ -153,41 +133,39 @@ class ShareRequestManager {
   }
 
   // ========================================
+  // GESTION UI BOUTONS
+  // ========================================
+  
+  showRequestButton() {
+    if (this.elements.requestBtn) this.elements.requestBtn.style.display = 'flex';
+    if (this.elements.shareBtn) this.elements.shareBtn.style.display = 'none';
+  }
+
+  hideRequestButton() {
+    if (this.elements.requestBtn) this.elements.requestBtn.style.display = 'none';
+    // Note: shareBtn est géré par app.js (host-stopped-sharing)
+  }
+
+  // ========================================
   // ENVOI DE DEMANDE
   // ========================================
   
   sendShareRequest() {
-    const nameInput = document.getElementById('modalNameInput');
-    if (!nameInput) {
-      console.error('❌ Input de nom non trouvé');
-      return;
-    }
-    
-    const requesterName = nameInput.value.trim() || 
-                          this.state.myName || 
-                          `User-${this.socket.id.slice(0, 4)}`;
+    const requesterName = this.state.myName;
     
     if (!requesterName) {
-      if (window.showAlert) {
-        window.showAlert('Veuillez entrer votre nom', 'warning');
-      }
+      if (window.showAlert) window.showAlert("Votre nom n'est pas défini. Veuillez le configurer dans les paramètres.", 'error');
+      this.closeModal();
       return;
     }
     
-    // Mettre à jour le nom dans l'état
-    this.state.myName = requesterName;
-    
-    console.log('📤 Envoi demande de partage:', requesterName);
     this.socket.emit('send-share-request', {
-      name: requesterName,
+      name: requesterName, // Assurez-vous que le serveur attend 'name' ou 'requesterName'
       targetHostId: this.state.hostId
     });
     
     this.closeModal();
-    
-    if (window.showAlert) {
-      window.showAlert('Demande envoyée ! En attente de réponse...', 'info', 10000);
-    }
+    if (window.showAlert) window.showAlert('Demande envoyée ! En attente de réponse...', 'info', 10000);
   }
 
   // ========================================
@@ -195,95 +173,55 @@ class ShareRequestManager {
   // ========================================
   
   acceptShareRequest(requesterId, requesterName) {
-    console.log('✅ Acceptation demande de:', requesterName);
-    
-    this.socket.emit('accept-share-request', {
-      requesterId: requesterId,
-      requesterName: requesterName
-    });
-    
+    this.socket.emit('accept-share-request', { requesterId, requesterName });
     this.closeModal();
-    
-    if (window.showAlert) {
-      window.showAlert(`Partage transféré à ${requesterName}`, 'success');
-    }
+    if (window.showAlert) window.showAlert(`Partage transféré à ${requesterName}`, 'success');
   }
 
   denyShareRequest(requesterId, requesterName) {
-    console.log('❌ Refus demande de:', requesterName);
-    
-    this.socket.emit('deny-share-request', {
-      requesterId: requesterId
-    });
-    
+    this.socket.emit('deny-share-request', { requesterId });
     this.closeModal();
-    
-    if (window.showAlert) {
-      window.showAlert(`Demande de ${requesterName} refusée`, 'info');
-    }
+    if (window.showAlert) window.showAlert(`Demande de ${requesterName} refusée`, 'info');
   }
 
-  // ========================================
-  // GESTION DES RÉPONSES
-  // ========================================
-  
   handleRequestAccepted() {
-    if (window.showAlert) {
-      window.showAlert('Demande acceptée ! Vous pouvez maintenant partager.', 'success');
-    }
+    this.closeModal(); // Fermer tous les autres modals
+    if (window.showAlert) window.showAlert('Demande acceptée ! Préparez-vous à partager.', 'success');
     
-    // Cacher le bouton de demande, afficher le bouton de partage
-    if (this.elements.requestBtn) {
-      this.elements.requestBtn.style.display = 'none';
-    }
-    
-    if (this.elements.shareBtn) {
-      this.elements.shareBtn.style.display = 'flex';
-      this.elements.shareBtn.disabled = false;
-      
-      // Auto-démarrer le partage après 1 seconde
-      setTimeout(() => {
-        this.elements.shareBtn.click();
-      }, 1000);
-    }
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal-content" style="text-align: center;">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-check-circle" style="color: var(--success);"></i> Prêt à partager</h3>
+        </div>
+        <p>L'hôte a accepté votre demande.</p>
+        <p>Cliquez sur le bouton ci-dessous pour démarrer le partage de votre écran.</p>
+        <div class="modal-buttons" style="justify-content: center; margin-top: 1.5rem;">
+          <button class="btn-launch" id="startShareFromAccept">
+            <i class="fa-solid fa-display"></i> Démarrer le partage
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('startShareFromAccept').addEventListener('click', () => {
+        this.closeModal();
+        console.log(`📤 [Accepted] Demande de partage pour: ${this.state.myName}`);
+        this.socket.emit('request-share', { name: this.state.myName });
+    });
   }
 
   handleRequestDenied() {
-    if (window.showAlert) {
-      window.showAlert('Demande refusée par l\'hôte', 'warning');
-    }
+    if (window.showAlert) window.showAlert('Demande refusée par l\'hôte', 'warning');
   }
 
-  // ========================================
-  // MÉTHODES PUBLIQUES POUR L'APP
-  // ========================================
-  
-  // Afficher le bouton de demande quand quelqu'un partage
-  showRequestButton() {
-    if (this.elements.shareBtn) {
-      this.elements.shareBtn.style.display = 'none';
-    }
-    if (this.elements.requestBtn) {
-      this.elements.requestBtn.style.display = 'flex';
-    }
-  }
-
-  // Cacher le bouton de demande
-  hideRequestButton() {
-    if (this.elements.requestBtn) {
-      this.elements.requestBtn.style.display = 'none';
-    }
-  }
-
-  // Réinitialiser l'interface
-  reset() {
-    this.hideRequestButton();
-    if (this.elements.shareBtn) {
-      this.elements.shareBtn.style.display = 'flex';
-      this.elements.shareBtn.disabled = false;
-    }
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 }
 
-// Exposer globalement
 window.ShareRequestManager = ShareRequestManager;

@@ -5,7 +5,6 @@
 class ChatManager {
   constructor(socket) {
     this.socket = socket;
-    this.isOpen = false;
     this.unreadMessages = 0;
     this.typingTimeout = null;
     this.userName = '';
@@ -13,27 +12,35 @@ class ChatManager {
     this.replyToId = null;
     this.replyToUsername = '';
     this.messagesMap = new Map();
+    this.isChatOpen = false; // État d'ouverture du chat
+    this.activeTab = 'public'; // 'public' ou 'private'
+    this.privateChatManager = null;
     
     this.elements = {
-      chatBtn: document.getElementById('chatBtn'),
       chatPanel: document.getElementById('chatPanel'),
       chatMessages: document.getElementById('chatMessages'),
+      privateChatContainer: document.getElementById('privateChatContainer'), // Nouveau conteneur principal
       chatInput: document.getElementById('chatInput'),
       sendBtn: document.getElementById('sendBtn'),
-      closeChatBtn: document.getElementById('closeChatBtn'),
-      unreadBadge: document.getElementById('unreadBadge'),
-      nameInput: document.getElementById('nameInput'),
-      chatUserName: document.getElementById('chatUserName')
+      attachBtn: document.querySelector('.attach-btn'),
+      fileInput: document.getElementById('fileInput'),
+      msgCount: document.getElementById('msgCount'),
+      chatTabBtn: document.getElementById('btnChat') // Bouton d'onglet du chat
     };
+    this.pendingFile = null;
+    
+    // Exposer l'instance globalement pour les handlers onclick dans le HTML généré
+    window.chatManager = this;
     
     this.init();
   }
   
   init() {
     // Événements UI
-    this.elements.chatBtn.addEventListener('click', () => this.toggleChat());
-    this.elements.closeChatBtn.addEventListener('click', () => this.closeChat());
+    this.setupTabs(); // Initialiser les onglets
     this.elements.sendBtn.addEventListener('click', () => this.sendMessage());
+    this.elements.attachBtn.addEventListener('click', () => this.elements.fileInput.click());
+    this.elements.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
     
     this.elements.chatInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -64,100 +71,182 @@ class ChatManager {
     // Événements Socket
     this.socket.on('new-message', (message) => this.addMessage(message));
     this.socket.on('user-typing', (data) => this.handleTyping(data));
+    this.socket.on('file-shared', (fileData) => this.addFileMessage(fileData));
     this.socket.on('users-update', (users) => this.updateActiveUsers(users));
-    
-    console.log('✅ Chat manager amélioré initialisé');
-  }
-  
-  toggleChat() {
-    if (!this.userName || this.userName.startsWith('User-')) {
-      this.showNicknameModal();
-      return;
+
+    // Initialiser le gestionnaire de chat privé s'il est chargé
+    if (typeof PrivateChatManager !== 'undefined') {
+      this.privateChatManager = new PrivateChatManager(this.socket, this);
     }
     
-    this.isOpen = !this.isOpen;
+    // Demander l'historique au démarrage
+    this.socket.emit('request-chat-history');
+    this.socket.on('chat-history', ({ messages }) => {
+      messages.forEach(msg => this.addMessage(msg));
+    });
     
-    if (this.isOpen) {
-      this.elements.chatPanel.classList.add('open');
-      this.elements.chatInput.focus();
-      this.unreadMessages = 0;
-      this.updateUnreadBadge();
-    } else {
-      this.elements.chatPanel.classList.remove('open');
+    console.log('✅ Chat manager initialisé pour le panneau intégré');
+
+    // Observer l'ouverture du panneau de chat pour reset les notifications
+    this.setupPanelObserver();
+  }
+
+  // ===== GESTION DES ONGLETS =====
+  setupTabs() {
+    const tabPublic = document.getElementById('tabPublic');
+    const tabPrivate = document.getElementById('tabPrivate');
+
+    if (tabPublic) {
+      tabPublic.addEventListener('click', () => this.switchTab('public'));
+    }
+    if (tabPrivate) {
+      tabPrivate.addEventListener('click', () => this.switchTab('private'));
     }
   }
-  
-  closeChat() {
-    this.isOpen = false;
-    this.elements.chatPanel.classList.remove('open');
-  }
-  
-  showNicknameModal() {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <h3>💬 Bienvenue dans le chat !</h3>
-        <p>Veuillez entrer votre surnom pour commencer à discuter.</p>
-        <input 
-          type="text" 
-          id="nicknameInput" 
-          placeholder="Votre surnom" 
-          maxlength="30" 
-          autofocus
-          value=""
-        >
-        <div class="modal-buttons">
-          <button class="btn-secondary" onclick="chatManager.closeNicknameModal()">Annuler</button>
-          <button class="btn-primary" onclick="chatManager.saveNickname()">Continuer</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
+
+  switchTab(tabName) {
+    this.activeTab = tabName;
     
-    setTimeout(() => {
-      const input = document.getElementById('nicknameInput');
-      input.focus();
-      
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          this.saveNickname();
+    // Mise à jour visuelle des boutons
+    document.getElementById('tabPublic').classList.toggle('active', tabName === 'public');
+    document.getElementById('tabPrivate').classList.toggle('active', tabName === 'private');
+
+    // Afficher/Masquer les conteneurs de messages
+    this.elements.chatMessages.classList.toggle('hidden', tabName !== 'public');
+    this.elements.privateChatContainer.classList.toggle('hidden', tabName !== 'private');
+    
+    this.elements.chatInput.focus();
+  }
+
+  setupPanelObserver() {
+    // On suppose que le panneau a une classe 'hidden' quand il est fermé
+    // ou que le bouton d'onglet a une classe 'active' quand il est ouvert
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.target.id === 'chatPanel' && !mutation.target.classList.contains('hidden')) {
+          this.isChatOpen = true;
+          this.resetUnreadCount();
+        } else if (mutation.target.id === 'chatPanel') {
+          this.isChatOpen = false;
         }
       });
-    }, 100);
-  }
-  
-  saveNickname() {
-    const input = document.getElementById('nicknameInput');
-    const nickname = input.value.trim();
-    
-    if (!nickname) {
-      this.showAlert('Veuillez entrer un surnom', 'warning');
-      input.focus();
-      return;
+    });
+
+    if (this.elements.chatPanel) {
+      observer.observe(this.elements.chatPanel, { attributes: true, attributeFilter: ['class'] });
     }
-    
-    this.userName = nickname;
-    this.socket.emit('update-name', { name: nickname });
-    
-    // Mettre à jour l'affichage du nom dans le header
-    if (this.elements.chatUserName) {
-      this.elements.chatUserName.textContent = nickname;
-    }
-    
-    this.closeNicknameModal();
-    
-    this.isOpen = true;
-    this.elements.chatPanel.classList.add('open');
-    this.elements.chatInput.focus();
-    
-    this.showAlert(`Bienvenue ${nickname} ! 👋`, 'success', 3000);
   }
-  
-  closeNicknameModal() {
-    const modal = document.querySelector('.modal-overlay');
-    if (modal) {
-      modal.remove();
+
+  async handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Afficher la prévisualisation
+    this.pendingFile = file;
+    this.showFilePreview(file);
+
+    // Réinitialiser l'input pour permettre de sélectionner le même fichier à nouveau
+    event.target.value = '';
+  }
+
+  showFilePreview(file) {
+    let previewContainer = document.getElementById('filePreviewContainer');
+    if (!previewContainer) {
+      previewContainer = document.createElement('div');
+      previewContainer.id = 'filePreviewContainer';
+      previewContainer.className = 'file-preview-container';
+      this.elements.chatInput.parentElement.insertBefore(previewContainer, this.elements.chatInput);
+    }
+
+    const fileType = this.getFileType(file.name);
+    const iconClass = this.getFileIcon(fileType);
+
+    previewContainer.innerHTML = `
+      <div class="file-preview-content">
+        <i class="${iconClass} file-preview-icon"></i>
+        <div class="file-preview-info">
+          <span class="file-preview-name">${this.escapeHtml(file.name)}</span>
+          <span class="file-preview-size">${(file.size / 1024).toFixed(1)} KB</span>
+        </div>
+        <button class="file-preview-cancel" title="Annuler">✕</button>
+      </div>
+      <div class="file-progress-bar"></div>
+    `;
+    previewContainer.style.display = 'block';
+
+    previewContainer.querySelector('.file-preview-cancel').addEventListener('click', () => {
+      previewContainer.style.display = 'none';
+      this.pendingFile = null;
+      this.elements.chatInput.focus();
+    });
+  }
+
+  uploadFile(file) {
+    const progressBar = document.querySelector('.file-progress-bar');
+    const previewContainer = document.getElementById('filePreviewContainer');
+    const cancelButton = previewContainer.querySelector('.file-preview-cancel');
+    
+    cancelButton.style.display = 'none'; // Cacher le bouton annuler pendant l'upload
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      // Déterminer la cible (Privé ou Public)
+      const to = (this.activeTab === 'private' && this.privateChatManager && this.privateChatManager.target) ? this.privateChatManager.target.id : null;
+
+      // SÉCURITÉ : Empêcher l'envoi public accidentel depuis l'onglet privé
+      if (this.activeTab === 'private' && !to) {
+        this.showAlert('Veuillez sélectionner une conversation pour envoyer un fichier privé.', 'error');
+        // Réinitialiser la prévisualisation
+        if (previewContainer) previewContainer.style.display = 'none';
+        this.pendingFile = null;
+        if (cancelButton) cancelButton.style.display = 'block';
+        return;
+      }
+
+      this.socket.emit('file-share', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        fileData: e.target.result,
+        to: to // On envoie l'ID du destinataire (ou null si public)
+      });
+      // La confirmation viendra du serveur
+    };
+
+    reader.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percentLoaded = Math.round((e.loaded / e.total) * 100);
+        progressBar.style.width = `${percentLoaded}%`;
+      }
+    };
+
+    reader.onloadend = () => {
+      // Masquer la prévisualisation et restaurer le bouton d'envoi après un court délai
+      this.pendingFile = null;
+      setTimeout(() => {
+        previewContainer.style.display = 'none';
+      }, 500);
+    };
+
+    reader.readAsArrayBuffer(file);
+  }
+
+  getFileType(fileName) {
+    const extension = fileName.split('.').pop().toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) return 'image';
+    if (['pdf'].includes(extension)) return 'pdf';
+    if (['doc', 'docx'].includes(extension)) return 'word';
+    if (['zip', 'rar', '7z'].includes(extension)) return 'archive';
+    return 'file';
+  }
+
+  getFileIcon(fileType) {
+    switch (fileType) {
+      case 'image': return 'fa-solid fa-file-image';
+      case 'pdf': return 'fa-solid fa-file-pdf';
+      case 'word': return 'fa-solid fa-file-word';
+      case 'archive': return 'fa-solid fa-file-zipper';
+      default: return 'fa-solid fa-file';
     }
   }
   
@@ -282,15 +371,34 @@ class ChatManager {
   }
   
   sendMessage() {
+    if (this.pendingFile) {
+      this.uploadFile(this.pendingFile);
+      return;
+    }
+
     const text = this.elements.chatInput.value.trim();
     if (!text) return;
     
+    // Déterminer la cible en fonction de l'onglet actif
     const messageData = {
       text: text,
-      replyTo: this.replyToId
+      replyTo: this.replyToId,
+      to: (this.activeTab === 'private' && this.privateChatManager && this.privateChatManager.target) ? this.privateChatManager.target.id : null
     };
     
     this.socket.emit('send-message', messageData);
+
+    // Affichage optimiste (immédiat) du message local
+    // Note: Le serveur renvoie aussi le message à l'expéditeur, 
+    // donc on doit éviter les doublons. 
+    // Ici, on attend le retour du serveur pour être sûr de l'ID et du timestamp,
+    // mais on pourrait l'ajouter tout de suite avec un ID temporaire.
+    // Pour l'instant, on laisse le socket.on('new-message') gérer l'affichage
+    // car il est très rapide en local.
+    
+    // Si on voulait l'ajouter tout de suite :
+    // this.addMessage({ ...messageData, senderId: this.socket.id, senderName: 'Moi', timestamp: Date.now(), id: 'temp-' + Date.now() });
+    // Mais il faudrait filtrer le retour serveur.
     
     this.elements.chatInput.value = '';
     this.elements.chatInput.style.height = 'auto';
@@ -299,13 +407,37 @@ class ChatManager {
   }
   
   addMessage(message) {
+    // 0. SÉCURITÉ ID : Si le message n'a pas d'ID, on en crée un basé sur le contenu et l'heure
+    if (!message.id) {
+      message.id = `msg_${message.senderId}_${message.timestamp || Date.now()}_${message.text.length}`;
+    }
+
+    // 1. ANTI-DOUBLON : Si on a déjà ce message, on l'ignore
+    if (message.id && this.messagesMap.has(message.id)) return;
+
     const messageDiv = document.createElement('div');
     const isOwnMessage = message.senderId === this.socket.id;
     const isMentioned = this.checkIfMentioned(message.text);
     
+    // 2. ROUTAGE STRICT (Public vs Privé)
+    const isPrivate = (message.to !== null && message.to !== undefined && message.to !== '') || message.isPrivate;
+    
+    let targetContainer = this.elements.chatMessages; // Par défaut : Public
+
+    if (isPrivate) {
+      // Déléguer TOUTE la gestion du message privé au PrivateChatManager
+      if (this.privateChatManager) {
+        this.privateChatManager.handleIncomingMessage(message);
+        return; // On arrête ici, le PrivateChatManager s'occupe du DOM
+      }
+    }
+    
     let messageClass = `chat-message ${isOwnMessage ? 'own-message' : ''}`;
     if (isMentioned && !isOwnMessage) {
       messageClass += ' mentioned';
+    }
+    if (isPrivate) {
+      messageClass += ' private-message';
     }
     
     const time = new Date(message.timestamp).toLocaleTimeString('fr-FR', {
@@ -351,13 +483,7 @@ class ChatManager {
     // Sauvegarder le message dans la map
     this.messagesMap.set(message.id, message);
     
-    // Supprimer le message de bienvenue s'il existe
-    const welcome = this.elements.chatMessages.querySelector('.chat-welcome');
-    if (welcome) {
-      welcome.remove();
-    }
-    
-    this.elements.chatMessages.appendChild(messageDiv);
+    targetContainer.appendChild(messageDiv);
     
     // Initialiser le swipe handler pour ce message
     if (!isOwnMessage) {
@@ -366,19 +492,79 @@ class ChatManager {
       });
     }
     
-    this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+    targetContainer.scrollTop = targetContainer.scrollHeight;
     
     // Animation pour les nouveaux messages
     messageDiv.classList.add('new-message');
     setTimeout(() => messageDiv.classList.remove('new-message'), 500);
-    
-    if (!this.isOpen && !isOwnMessage) {
+
+    // Gestion des notifications
+    if (!isOwnMessage && !this.isChatOpen) {
       this.unreadMessages++;
       this.updateUnreadBadge();
-      
-      this.elements.chatBtn.classList.add('pulse');
-      setTimeout(() => this.elements.chatBtn.classList.remove('pulse'), 1000);
     }
+  }
+
+  updateUnreadBadge() {
+    if (this.elements.msgCount) {
+      if (this.unreadMessages > 0) {
+        this.elements.msgCount.textContent = this.unreadMessages > 99 ? '99+' : this.unreadMessages;
+        this.elements.msgCount.classList.add('visible');
+      } else {
+        this.elements.msgCount.classList.remove('visible');
+      }
+    }
+    // Mettre à jour aussi le badge sur le bouton de l'en-tête si nécessaire
+    if (this.elements.chatTabBtn && this.unreadMessages > 0) {
+       // Ajouter une classe ou un indicateur visuel sur l'onglet
+    }
+  }
+
+  addFileMessage(fileData) {
+    // 1. ROUTAGE STRICT (Public vs Privé)
+    const isPrivate = (fileData.to !== null && fileData.to !== undefined && fileData.to !== '') || fileData.isPrivate;
+
+    if (isPrivate) {
+      // Déléguer au gestionnaire privé
+      if (this.privateChatManager) {
+        this.privateChatManager.handleIncomingFile(fileData);
+        return; 
+      }
+    }
+
+    // 2. AFFICHAGE PUBLIC (si ce n'est pas privé)
+    const fileDiv = document.createElement('div');
+    const isOwnMessage = fileData.senderId === this.socket.id;
+    const time = new Date(fileData.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    fileDiv.className = `chat-message ${isOwnMessage ? 'own-message' : ''}`;
+
+    const blob = new Blob([fileData.fileData], { type: fileData.fileType });
+    const url = URL.createObjectURL(blob);
+
+    fileDiv.innerHTML = `
+      <div class="message-header">
+        <span class="message-sender">${this.escapeHtml(fileData.senderName)}</span>
+        <span class="message-time">${time}</span>
+      </div>
+      <div class="file-message">
+        <i class="fa-solid fa-file"></i>
+        <div class="file-info">
+          <span class="file-name">${this.escapeHtml(fileData.fileName)}</span>
+          <span class="file-size">${(fileData.fileSize / 1024).toFixed(1)} KB</span>
+        </div>
+        <a href="${url}" download="${this.escapeHtml(fileData.fileName)}" class="download-btn" title="Télécharger">
+          <i class="fa-solid fa-download"></i>
+        </a>
+      </div>
+    `;
+    this.elements.chatMessages.appendChild(fileDiv);
+    this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+  }
+
+  resetUnreadCount() {
+    this.unreadMessages = 0;
+    this.updateUnreadBadge();
   }
   
   // ===== UTILITAIRES =====
@@ -408,15 +594,6 @@ class ChatManager {
   truncate(text, maxLength) {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
-  }
-  
-  updateUnreadBadge() {
-    if (this.unreadMessages > 0) {
-      this.elements.unreadBadge.textContent = this.unreadMessages > 99 ? '99+' : this.unreadMessages;
-      this.elements.unreadBadge.style.display = 'flex';
-    } else {
-      this.elements.unreadBadge.style.display = 'none';
-    }
   }
   
   startTyping() {
@@ -484,10 +661,18 @@ class ChatManager {
   
   setUserName(name) {
     this.userName = name;
-    // Mettre à jour l'affichage dans le header
-    if (this.elements.chatUserName) {
-      this.elements.chatUserName.textContent = name;
+  }
+
+  // ===== INTERFACE POUR LE CHAT PRIVÉ =====
+  initiatePrivateChat(targetId, targetName) {
+    if (this.privateChatManager) {
+      this.privateChatManager.initiate(targetId, targetName);
     }
+  }
+
+  clearMessages() {
+    this.elements.chatMessages.innerHTML = '';
+    this.messagesMap.clear();
   }
 }
 

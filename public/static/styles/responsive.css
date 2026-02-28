@@ -1,0 +1,123 @@
+/* ========================================
+   RESPONSIVE.CSS
+   Gestion de l'adaptation mobile et tablette
+   ======================================== */
+
+/* ========================================
+   TABLETTE (max-width: 1024px)
+   ======================================== */
+@media (max-width: 1024px) {
+  .side-panel {
+    width: 280px;
+  }
+}
+
+/* ========================================
+   MOBILE (max-width: 768px)
+   ======================================== */
+@media (max-width: 768px) {
+  
+  /* --- ACCUEIL (index.html) --- */
+  .home-layout {
+    flex-direction: column-reverse;
+  }
+  
+  .form-column, .info-column {
+    width: 100%;
+    max-width: 100%;
+    padding: 2rem 1rem;
+  }
+  
+  .info-column {
+    text-align: center;
+  }
+  
+  .info-column .feature-card {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .info-column .feature-icon {
+    margin: 0 auto 1.5rem;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  /* --- SALLE DE CONFÉRENCE (room.html) --- */
+  
+  /* Layout principal : Stack vertical */
+  .room-layout {
+    width: 100%;
+    overflow-x: hidden;
+    /* La direction flex reste row, mais le panneau latéral sera en position absolue */
+  }
+  
+  /* Zone Vidéo : Prend tout l'espace par défaut */
+  .video-area {
+    flex: 1;
+    width: 100%;
+    padding: 0.5rem;
+  }
+  
+  /* Panneau latéral (Chat/Participants) : Caché par défaut, apparaît par dessus */
+  .side-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70%; /* Prend 70% de la hauteur du parent (.room-layout) */
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: none;
+    border-top: 1px solid var(--border-light);
+    z-index: 20;
+  }
+
+  .side-panel.open {
+    transform: translateY(0); /* Devient visible en glissant vers le haut */
+  }
+
+  .dark-mode .side-panel {
+    border-top-color: var(--border-dark);
+  }
+
+  /* Header : Simplification */
+  .room-header {
+    padding: 0.5rem 1rem;
+  }
+
+  .room-header-right .btn-header-tab span {
+    display: none; /* Cache le texte des boutons, garde les icônes */
+  }
+  
+  /* Footer : Contrôles */
+  .room-footer {
+    padding: 0.5rem;
+  }
+
+  .controls-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .ctrl-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+  }
+
+  /* Ajustements divers */
+  .screen-share-label {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+}

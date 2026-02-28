@@ -1,4 +1,4 @@
-# 🎥 Système de Partage d'Écran en Réseau Local
+# 🎥 ESTLC SHARE SCREEN
 
 Application web permettant de partager un écran avec plusieurs utilisateurs sur un **réseau local sans connexion internet**.
 
@@ -6,12 +6,13 @@ Application web permettant de partager un écran avec plusieurs utilisateurs sur
 
 ## 📋 Table des matières
 
-1. [Vue d'ensemble](#vue-densemble)
-2. [Comment ça fonctionne](#comment-ça-fonctionne)
-3. [Architecture technique](#architecture-technique)
-4. [Installation](#installation)
-5. [Utilisation](#utilisation)
-6. [Dépannage](#dépannage)
+1. [Auteur](#auteur)
+2. [Vue d'ensemble](#vue-densemble)
+3. [Comment ça fonctionne](#comment-ça-fonctionne)
+4. [Architecture technique](#architecture-technique)
+5. [Installation](#installation)
+6. [Utilisation](#utilisation)
+7. [Dépannage](#dépannage)
 
 ---
 
@@ -19,12 +20,16 @@ Application web permettant de partager un écran avec plusieurs utilisateurs sur
 
 ### Qu'est-ce que c'est ?
 
-Une application similaire à **Google Meet** mais qui fonctionne **100% en local** :
+Une application web pour le partage d'écran en temps réel qui fonctionne **100% en local** :
 - ✅ Une seule URL pour tous les participants
 - ✅ Partage d'écran en temps réel
 - ✅ Blocage automatique (une seule personne partage à la fois)
 - ✅ Notifications en temps réel
 - ✅ Pas besoin d'internet
+- ✅ **Audio Mesh P2P** : Discussion vocale entre tous les participants
+- ✅ **Modération** : L'hôte peut couper les micros et gérer les mains levées
+- ✅ **Chat Privé & Public** : Messagerie complète avec envoi de fichiers
+- ✅ **Prise de Notes** : Éditeur intégré avec export PDF et dictée vocale
 - ✅ Pas de base de données
 
 ### Cas d'usage
@@ -320,6 +325,18 @@ Jean clique sur "Arrêter le partage"
 ```
 
 **Maintenant Marie ou Paul peuvent cliquer sur "Partager" à leur tour !**
+
+#### **Phase 7 : Fonctionnalités Avancées**
+
+1. **Audio & Modération** :
+   - Tout le monde peut parler (Mesh Audio).
+   - L'hôte voit qui parle et peut couper les micros.
+   - Les participants peuvent lever la main ✋ pour demander la parole.
+
+2. **Prise de Notes** :
+   - Chaque participant a son bloc-notes personnel.
+   - Export en PDF avec en-tête du cours.
+   - Sauvegarde automatique locale.
 
 ---
 
@@ -679,6 +696,12 @@ Si vous devez sécuriser :
 
 Ce projet est à usage éducatif / interne.
 Vous pouvez l'utiliser, le modifier, le distribuer librement.
+
+---
+
+## ✍️ Auteur
+
+Ce projet a été développé par **MASSE MASSE PAUL - BASTHYLE**.
 
 ---
 

@@ -1,0 +1,422 @@
+/* ========================================
+   NOTES PANEL - style_notes.css
+   Panneau de prise de notes intégré
+   ======================================== */
+
+/* ===== PANNEAU COULISSANT ===== */
+.notes-panel {
+  position: fixed;
+  top: 0;
+  right: -440px;
+  width: 420px;
+  height: 100vh;
+  background: #0d1117;
+  border-left: 1px solid #21262d;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -8px 0 30px rgba(0,0,0,0.3);
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.notes-panel.open {
+  right: 0;
+}
+
+.notes-panel-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ===== HEADER ===== */
+.notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  flex-shrink: 0;
+}
+
+.notes-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notes-icon {
+  font-size: 1.4rem;
+}
+
+.notes-header-left h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e6edf3;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.notes-session-label {
+  font-size: 11px;
+  color: #006400;
+  font-weight: 600;
+}
+
+.notes-header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.notes-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #21262d;
+  background: transparent;
+  color: #8b949e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.notes-action-btn:hover {
+  background: #21262d;
+  color: #e6edf3;
+  border-color: #006400;
+}
+
+.notes-action-btn.close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* ===== INFOS DU COURS ===== */
+.notes-course-info {
+  padding: 12px 16px;
+  background: #0d1117;
+  border-bottom: 1px solid #21262d;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.notes-course-input {
+  width: 100%;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #e6edf3;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.notes-course-input:first-child {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.notes-course-input::placeholder {
+  color: #484f58;
+}
+
+.notes-course-input:focus {
+  border-color: #006400;
+  box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.15);
+}
+
+/* ===== SCROLL SECTIONS ===== */
+.notes-sections-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notes-sections-scroll::-webkit-scrollbar { width: 4px; }
+.notes-sections-scroll::-webkit-scrollbar-track { background: transparent; }
+.notes-sections-scroll::-webkit-scrollbar-thumb {
+  background: #21262d;
+  border-radius: 4px;
+}
+
+/* ===== CARTE DE SECTION ===== */
+.notes-section-card {
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 10px;
+  overflow: hidden;
+  animation: sectionIn 0.25s ease;
+  transition: border-color 0.2s;
+}
+
+.notes-section-card:focus-within {
+  border-color: #006400;
+}
+
+@keyframes sectionIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sectionOut {
+  from { opacity: 1; transform: translateY(0); max-height: 300px; }
+  to { opacity: 0; transform: translateY(-8px); max-height: 0; }
+}
+
+.notes-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #1c2128;
+  border-bottom: 1px solid #21262d;
+}
+
+.notes-section-num {
+  width: 22px;
+  height: 22px;
+  background: #006400;
+  color: white;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.notes-section-title {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e6edf3;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  padding: 0;
+}
+
+.notes-section-title::placeholder {
+  color: #484f58;
+  font-weight: 400;
+}
+
+.notes-section-del {
+  background: transparent;
+  border: none;
+  color: #484f58;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.notes-section-del:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* ===== TEXTAREA + MIC ===== */
+.notes-section-body {
+  padding: 10px 12px;
+}
+
+.notes-textarea-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.notes-textarea {
+  flex: 1;
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.6;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+  min-height: 80px;
+  max-height: 200px;
+  transition: border-color 0.2s;
+  overflow-y: auto;
+}
+
+.notes-textarea::placeholder {
+  color: #484f58;
+  font-style: italic;
+}
+
+.notes-textarea:focus {
+  border-color: #006400;
+  box-shadow: 0 0 0 2px rgba(0,100,0,0.1);
+}
+
+.notes-mic-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #21262d;
+  background: #1c2128;
+  color: #8b949e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.notes-mic-btn:hover {
+  border-color: #006400;
+  color: #006400;
+}
+
+.notes-mic-btn.mic-active {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
+  animation: micPulse 1.5s infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+}
+
+.notes-mic-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #8b949e;
+}
+
+/* ===== BOUTON AJOUTER ===== */
+.notes-add-section {
+  padding: 10px 12px;
+  flex-shrink: 0;
+  border-top: 1px solid #21262d;
+}
+
+.notes-add-btn {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px dashed #21262d;
+  border-radius: 8px;
+  color: #8b949e;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.notes-add-btn:hover {
+  border-color: #006400;
+  color: #006400;
+  background: rgba(0, 100, 0, 0.05);
+}
+
+/* ===== FOOTER LINGUA MMPB ===== */
+.notes-footer {
+  padding: 10px 16px;
+  background: #0d1117;
+  border-top: 1px solid #21262d;
+  flex-shrink: 0;
+}
+
+.notes-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #484f58;
+}
+
+.lingua-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: #006400;
+  font-weight: 700;
+  transition: color 0.2s;
+}
+
+.lingua-link:hover {
+  color: #00a000;
+}
+
+.lingua-logo {
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #006400, #00a000);
+  color: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.notes-footer-sep {
+  color: #21262d;
+}
+
+.notes-autosave-status {
+  font-size: 10px;
+  color: #484f58;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.3s;
+}
+
+/* ===== BOUTON HEADER ROOM ===== */
+#btnNotes {
+  position: relative;
+}
+
+#btnNotes.active {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .notes-panel {
+    width: 100vw;
+    right: -100vw;
+  }
+}

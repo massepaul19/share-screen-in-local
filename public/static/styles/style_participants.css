@@ -1,0 +1,465 @@
+/* ========================================
+   ADMIN ACTION BAR - à ajouter dans style.css
+   Barre de contrôle admin dans les cartes participants
+   ======================================== */
+
+/* ===== CARTE PARTICIPANT (mise à jour) ===== */
+.participant-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+  flex-wrap: wrap; /* Permet à la barre admin de passer en dessous */
+}
+
+.participant-card:hover {
+  background: var(--bg-light);
+  border-color: var(--border-light);
+}
+
+.dark-mode .participant-card:hover {
+  background: #1c2128;
+  border-color: #21262d;
+}
+
+/* Carte avec barre admin visible au hover */
+.participant-card.has-admin:hover .admin-action-bar,
+.participant-card.hand-raised-item .admin-action-bar {
+  display: flex;
+}
+
+/* Carte main levée : toujours visible */
+.participant-card.hand-raised-item {
+  border-left: 3px solid #FFD700;
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.participant-card.is-host {
+  border-left: 3px solid #f59e0b;
+}
+
+.participant-card.is-me {
+  opacity: 0.85;
+}
+
+/* ===== AVATAR ===== */
+.p-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.status-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background: #3fb950;
+  border-radius: 50%;
+  border: 2px solid var(--surface-light);
+  animation: pulseDot 2s infinite;
+}
+
+.dark-mode .status-dot {
+  border-color: #161b22;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.hand-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 14px;
+  animation: handWave 1s ease infinite;
+}
+
+@keyframes handWave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(15deg); }
+  75% { transform: rotate(-10deg); }
+}
+
+/* ===== INFOS ===== */
+.p-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.p-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-light-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dark-mode .p-name {
+  color: #e6edf3;
+}
+
+.me-tag {
+  font-size: 10px;
+  background: var(--primary);
+  color: white;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.p-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.p-status {
+  font-size: 11px;
+  color: var(--text-light-secondary);
+}
+
+.p-status.sharing {
+  color: #3fb950;
+  font-weight: 600;
+}
+
+.p-mic-indicator {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.p-mic-indicator.mic-on {
+  color: #3fb950;
+  background: rgba(63, 185, 80, 0.1);
+}
+
+.p-mic-indicator.mic-off {
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.1);
+}
+
+.p-hand-indicator {
+  font-size: 12px;
+  animation: handWave 1s ease infinite;
+}
+
+/* ===== BARRE ADMIN ===== */
+.admin-action-bar {
+  width: 100%;          /* Prend toute la largeur */
+  display: none;        /* Caché par défaut, visible au hover */
+  gap: 6px;
+  padding: 8px 0 2px 0;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-light);
+  flex-wrap: nowrap;
+}
+
+.dark-mode .admin-action-bar {
+  border-top-color: #21262d;
+}
+
+/* Bouton admin générique */
+.admin-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  background: var(--surface-light);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-light-secondary);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.dark-mode .admin-btn {
+  background: #1c2128;
+  border-color: #21262d;
+  color: #8b949e;
+}
+
+.admin-btn i {
+  font-size: 12px;
+}
+
+/* Micro actif → vert */
+.admin-btn--active {
+  border-color: rgba(63, 185, 80, 0.4);
+  color: #3fb950;
+}
+
+.admin-btn--active:hover {
+  background: rgba(63, 185, 80, 0.1);
+  border-color: #3fb950;
+  color: #3fb950;
+}
+
+/* Micro coupé → rouge */
+.admin-btn--muted {
+  border-color: rgba(248, 81, 73, 0.4);
+  color: #f85149;
+}
+
+.admin-btn--muted:hover {
+  background: rgba(248, 81, 73, 0.1);
+  border-color: #f85149;
+}
+
+/* Main levée → or animé */
+.admin-btn--hand {
+  border-color: rgba(255, 215, 0, 0.5);
+  color: #FFD700;
+  animation: handGlow 1.5s ease infinite;
+}
+
+.admin-btn--hand:hover {
+  background: rgba(255, 215, 0, 0.1);
+  border-color: #FFD700;
+}
+
+@keyframes handGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+  50% { box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2); }
+}
+
+/* Main non levée → grisé désactivé */
+.admin-btn--disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Message → bleu */
+.admin-btn--msg {
+  color: var(--info);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.admin-btn--msg:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--info);
+}
+
+/* ===== SECTION LABELS ===== */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-light-secondary);
+  padding: 8px 2px 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+}
+
+.raised-hands-section {
+  color: #FFD700;
+}
+
+.raised-hands-section::after {
+  background: rgba(255, 215, 0, 0.3);
+}
+
+/* ===== VUE GRILLE ===== */
+.participants-list.grid-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.participants-list.grid-view .section-label {
+  grid-column: 1 / -1;
+}
+
+.participants-list.grid-view .participant-card {
+  flex-direction: column;
+  text-align: center;
+  padding: 14px 10px;
+  gap: 8px;
+  cursor: default;
+}
+
+.participants-list.grid-view .p-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 17px;
+  margin: 0 auto;
+}
+
+.participants-list.grid-view .p-name {
+  justify-content: center;
+  font-size: 12px;
+}
+
+.participants-list.grid-view .p-status-row {
+  justify-content: center;
+}
+
+.participants-list.grid-view .admin-action-bar {
+  justify-content: center;
+}
+
+.participants-list.grid-view .admin-btn span {
+  display: none; /* Juste les icônes en vue grille */
+}
+
+.participants-list.grid-view .admin-btn {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+/* ===== NOTIFICATIONS MAIN LEVÉE ===== */
+.hand-raised-notif {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #161b22;
+  border: 1px solid #FFD700;
+  border-radius: 12px;
+  padding: 12px 16px;
+  z-index: 3000;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
+  animation: slideUpNotif 0.3s ease;
+  min-width: 280px;
+}
+
+.hand-notif-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hand-notif-icon { font-size: 1.5rem; }
+
+.hand-notif-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: #e6edf3;
+}
+
+.hand-notif-info strong { font-size: 14px; }
+.hand-notif-info span { color: #8b949e; font-size: 11px; }
+
+.hand-notif-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-allow-mic {
+  background: #006400;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btn-allow-mic:hover { background: #00a000; }
+
+.btn-dismiss-hand {
+  background: transparent;
+  border: 1px solid #484f58;
+  color: #8b949e;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-dismiss-hand:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #f85149;
+  color: #f85149;
+}
+
+@keyframes slideUpNotif {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* ===== BANNER MICRO AUTORISÉ ===== */
+.mic-allowed-banner {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #006400, #004d00);
+  color: white;
+  border-radius: 12px;
+  padding: 14px 20px;
+  z-index: 3000;
+  box-shadow: 0 4px 20px rgba(0,100,0,0.4);
+  animation: slideDownBanner 0.3s ease;
+}
+
+.mic-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.mic-banner-content button {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 8px;
+  transition: color 0.2s;
+}
+
+.mic-banner-content button:hover { color: white; }
+
+@keyframes slideDownBanner {
+  from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}

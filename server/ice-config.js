@@ -33,12 +33,13 @@ function getICEServers() {
   const localIP = getLocalIP();
   
   return [
-    // Serveurs STUN Google (gratuits et fiables)
+    // Serveurs STUN Google (optionnels, utiles si accès internet mais pas bloquants si hors ligne)
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
+    // On peut réduire la liste pour accélérer la connexion en local pur
+    // { urls: 'stun:stun1.l.google.com:19302' },
+    // { urls: 'stun:stun2.l.google.com:19302' },
+    // { urls: 'stun:stun3.l.google.com:19302' },
+    // { urls: 'stun:stun4.l.google.com:19302' },
     
     // Serveur TURN local avec IP auto-détectée
     {

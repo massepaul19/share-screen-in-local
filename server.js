@@ -1,96 +1,74 @@
 // ========================================
-// server.js - Point d'entrée principal avec mediasoup
+// server.js — Point d'entrée ESTLC Share Screen
 // ========================================
 
-const express = require('express');
-const https = require('https');
-const http = require('http');
+const express  = require('express');
+const https    = require('https');
+const http     = require('http');
 const socketIo = require('socket.io');
-const path = require('path');
-const fs = require('fs');
+const path     = require('path');
+const fs       = require('fs');
 
-// ✅ Modules existants
-const { generateSelfSignedCert } = require('./server/cert-generator');
-const { setupSocketHandlers } = require('./server/socket-handlers');
-const { displayServerInfo } = require('./server/utils');
-const { getICEServers } = require('./server/ice-config');
+const { generateSelfSignedCert }          = require('./server/cert-generator');
+const { setupSocketHandlers, globalState } = require('./server/socket-handlers');
+const { displayServerInfo }               = require('./server/utils');
+const pagesRouter                         = require('./routes/pages');
+const { router: apiRouter, init: initApi } = require('./routes/api');
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 3443;
 
+// ── Middleware ────────────────────────────────────────────────
 app.use('/libs', express.static('node_modules'));
-
-// Middleware
 app.use(express.static('public'));
 app.use(express.json());
 
-// Routes
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// ── Routes ───────────────────────────────────────────────────
+app.use('/',    pagesRouter);
+app.use('/api', apiRouter);
 
-app.get('/api/status', (req, res) => {
-  res.json({
-    status: 'online',
-    timestamp: Date.now()
-  });
-});
-
-app.get('/api/ice-servers', (req, res) => {
-  res.json({ iceServers: getICEServers() });
-});
-
-// Configuration SSL
+// ── SSL ──────────────────────────────────────────────────────
 const certPaths = generateSelfSignedCert();
 let server, protocol;
 
 if (certPaths) {
   try {
-    const httpsOptions = {
-      key: fs.readFileSync(certPaths.key),
+    server   = https.createServer({
+      key:  fs.readFileSync(certPaths.key),
       cert: fs.readFileSync(certPaths.cert)
-    };
-    server = https.createServer(httpsOptions, app);
+    }, app);
     protocol = 'https';
     console.log('🔒 Mode HTTPS activé');
   } catch (err) {
     console.error('❌ Erreur SSL:', err.message);
-    server = http.createServer(app);
+    server   = http.createServer(app);
     protocol = 'http';
   }
 } else {
-  server = http.createServer(app);
+  server   = http.createServer(app);
   protocol = 'http';
   console.log('⚠️  Mode HTTP');
 }
 
-// Configuration Socket.IO
+// ── Socket.IO ─────────────────────────────────────────────────
 const io = socketIo(server, {
-  cors: { 
-    origin: "*",
-    methods: ["GET", "POST"],
-    credentials: true
-  },
-  maxHttpBufferSize: 1e8, 
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  transports: ['websocket', 'polling']
+  cors:              { origin: '*', methods: ['GET', 'POST'], credentials: true },
+  maxHttpBufferSize: 1e8,
+  pingTimeout:       60000,
+  pingInterval:      25000,
+  transports:        ['websocket', 'polling']
 });
 
-// Initialiser tous les handlers Socket.IO
-async function setupAllHandlers() {
-  // ✅ Handler partage d'écran (existant)
-  setupSocketHandlers(io);
-  console.log('✅ Handlers partage d\'écran chargés');
-}
-
-// Démarrer le serveur
+// ── Démarrage ─────────────────────────────────────────────────
 async function startServer() {
   try {
-    // 1. Setup handlers
-    await setupAllHandlers();
+    // Injecter globalState dans les routes API (pour /api/check-room)
+    initApi(globalState);
 
-    // 2. Démarrer le serveur HTTP(S)
+    // Handlers Socket.IO
+    setupSocketHandlers(io);
+    console.log('✅ Handlers Socket.IO chargés');
+
     server.listen(PORT, '0.0.0.0', () => {
       console.log('');
       console.log('═══════════════════════════════════════════════');
@@ -98,49 +76,33 @@ async function startServer() {
       console.log('═══════════════════════════════════════════════');
       displayServerInfo(protocol, PORT);
       console.log('');
-      console.log('📋 Fonctionnalités actives:');
-      console.log('   ✅ Partage d\'écran en réseau local (WebRTC P2P)');
+      console.log('📋 Fonctionnalités actives :');
+      console.log('   ✅ Partage d\'écran WebRTC P2P');
       console.log('   ✅ Signalisation via WebSockets');
-      
+      console.log('   ✅ Destruction auto des salles vides (15 min)');
+      console.log('   ✅ Vérification unicité des codes de salle');
+      console.log('   ✅ Gestion micros (mute-all / unmute-all)');
+      console.log('   ✅ Routes centralisées dans routes/');
       console.log('');
       console.log('═══════════════════════════════════════════════');
       console.log('');
     });
 
   } catch (error) {
-    console.error('❌ Erreur démarrage serveur:', error.message);
+    console.error('❌ Erreur démarrage:', error.message);
     process.exit(1);
   }
 }
 
-// Gestion propre de l'arrêt
+// ── Arrêt propre ──────────────────────────────────────────────
 process.on('SIGINT', () => {
-  console.log('\n\n⏹️  Arrêt du serveur...');
-  
-  io.close(() => {
-    server.close(() => {
-      console.log('✅ Serveur arrêté\n');
-      process.exit(0);
-    });
-  });
+  console.log('\n⏹️  Arrêt du serveur...');
+  io.close(() => server.close(() => { console.log('✅ Arrêté'); process.exit(0); }));
 });
-
 process.on('SIGTERM', () => {
-  console.log('\n⏹️  Signal SIGTERM reçu, arrêt du serveur...');
-  server.close(() => {
-    console.log('✅ Serveur arrêté');
-    process.exit(0);
-  });
+  server.close(() => { console.log('✅ Arrêté (SIGTERM)'); process.exit(0); });
 });
+process.on('uncaughtException',  (err)    => console.error('❌ uncaughtException:',  err.message, err.stack));
+process.on('unhandledRejection', (reason) => console.error('❌ unhandledRejection:', reason));
 
-process.on('uncaughtException', (error) => {
-  console.error('❌ Exception non gérée:', error.message);
-  console.error(error.stack);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Promesse rejetée non gérée:', reason);
-});
-
-// Lancer le serveur
 startServer();

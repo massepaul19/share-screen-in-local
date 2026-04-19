@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function launchMeeting() {
+  async function launchMeeting() {
     const name = document.getElementById('newName').value.trim();
     const room = document.getElementById('newRoom').value.trim();
     const customCode = document.getElementById('customCode').value.trim();
@@ -52,14 +52,34 @@ document.addEventListener('DOMContentLoaded', () => {
       return; 
     }
 
-    const roomId = customCodeToggle.classList.contains('active') && customCode
+    const useCustomCode = customCodeToggle.classList.contains('active') && customCode;
+    const roomId = useCustomCode
       ? customCode.toLowerCase().replace(/[\s_]+/g, '-')
       : room.toLowerCase().replace(/[\s_]+/g, '-') || 'session-' + Date.now();
+
+    // ===== VÉRIFICATION UNICITÉ DU CODE PERSONNALISÉ =====
+    if (useCustomCode) {
+      try {
+        const res  = await fetch(`/api/check-room/${encodeURIComponent(roomId)}`);
+        const data = await res.json();
+        if (data.exists) {
+          const msg = data.userCount > 0
+            ? `Le code "${roomId}" est déjà utilisé par une session active (${data.userCount} participant(s)).\n\nChoisissez un autre code ou rejoignez cette session.`
+            : `Le code "${roomId}" existe déjà (session récente en attente de destruction).\n\nChoisissez un autre code.`;
+          alert(msg);
+          document.getElementById('customCode').focus();
+          return;
+        }
+      } catch (err) {
+        console.warn('Vérification code impossible (serveur injoignable) :', err);
+        // On laisse passer — le serveur gèrera le conflit
+      }
+    }
 
     // URL pour l'hôte
     const hostURL = `room.html?room=${roomId}&name=${encodeURIComponent(name)}&host=true`;
 
-    // URL à partager avec les participants
+    // URL à partager avec les participants (page d'accueil avec code pré-rempli)
     const participantURLParams = new URLSearchParams({ room: roomId });
     const fullParticipantURL = `${window.location.origin}${window.location.pathname}?${participantURLParams.toString()}`;
 

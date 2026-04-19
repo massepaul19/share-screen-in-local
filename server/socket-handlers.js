@@ -24,6 +24,61 @@ function getRoomState(roomId) {
   return globalState.rooms.get(roomId);
 }
 
+// ============================================================
+// DESTRUCTION AUTOMATIQUE DES SALLES VIDES
+// ============================================================
+const ROOM_EMPTY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+const ROOM_EMPTY_WARN    =  2 * 60 * 1000; // Alerte 2 min avant destruction
+const roomDestructionTimers = new Map(); // roomId -> { warnTimer, destroyTimer }
+
+function scheduleRoomDestruction(io, roomId) {
+  // Si un timer existe déjà, on l'annule d'abord
+  cancelRoomDestruction(roomId);
+
+  const warnTimer = setTimeout(() => {
+    // Alerte aux users restants (si quelqu'un est revenu entre-temps)
+    const usersInRoom = Array.from(globalState.connectedUsers.values())
+      .filter(u => u.room === roomId).length;
+    if (usersInRoom > 0) {
+      // Des users sont revenus — annuler la destruction
+      cancelRoomDestruction(roomId);
+      return;
+    }
+    io.to(roomId).emit('room-closing-soon', {
+      message: 'La salle sera fermée dans 2 minutes faute d\'activité.',
+      secondsLeft: 120
+    });
+  }, ROOM_EMPTY_TIMEOUT - ROOM_EMPTY_WARN);
+
+  const destroyTimer = setTimeout(() => {
+    const usersInRoom = Array.from(globalState.connectedUsers.values())
+      .filter(u => u.room === roomId).length;
+    if (usersInRoom > 0) {
+      cancelRoomDestruction(roomId);
+      return;
+    }
+    // Destruction effective
+    log(`🗑️  ROOM DESTROY | ${roomId} — vide depuis 15 min`);
+    io.to(roomId).emit('room-destroyed', {
+      message: 'La salle a été fermée automatiquement (inactivité).'
+    });
+    globalState.rooms.delete(roomId);
+    roomDestructionTimers.delete(roomId);
+  }, ROOM_EMPTY_TIMEOUT);
+
+  roomDestructionTimers.set(roomId, { warnTimer, destroyTimer });
+  log(`⏳ ROOM TIMER | ${roomId} — destruction dans 15 min si toujours vide`);
+}
+
+function cancelRoomDestruction(roomId) {
+  const timers = roomDestructionTimers.get(roomId);
+  if (timers) {
+    clearTimeout(timers.warnTimer);
+    clearTimeout(timers.destroyTimer);
+    roomDestructionTimers.delete(roomId);
+  }
+}
+
 // ===== UTILITAIRE: Diffuser la liste des utilisateurs actifs =====
 function broadcastUsersUpdate(io, roomId) {
   const users = Array.from(globalState.connectedUsers.values())
@@ -99,6 +154,9 @@ function setupSocketHandlers(io) {
 
       socket.join(roomId);
       log(`👤 REGISTER | ${userName} (${browser}) -> Room: ${roomId}`);
+
+      // ===== ANNULER DESTRUCTION si un user rejoint une salle en attente =====
+      cancelRoomDestruction(roomId);
       
       // Envoyer l'état initial de la salle spécifique
       socket.emit('initial-state', {
@@ -339,6 +397,53 @@ function setupSocketHandlers(io) {
         log(`🎤 ALLOW MIC | ${requester.name} autorise ${targetId.slice(0, 6)}`);
         io.to(targetId).emit('mic-allowed', { by: requester.name });
       }
+    });
+
+    // ===== MUTE ALL — Couper tous les micros (hôte/admin uniquement) =====
+    socket.on('mute-all', () => {
+      const requester = globalState.connectedUsers.get(socket.id);
+      if (!requester) return;
+      const roomState = getRoomState(requester.room);
+
+      if (roomState.hostSocketId !== socket.id && roomState.adminSocketId !== socket.id) return;
+
+      log(`🔇 MUTE ALL | ${requester.name} a coupé tous les micros`);
+
+      // Couper tous sauf l'hôte lui-même
+      Array.from(globalState.connectedUsers.values())
+        .filter(u => u.room === requester.room && u.socketId !== socket.id)
+        .forEach(u => {
+          u.micOn = false;
+          globalState.connectedUsers.set(u.socketId, u);
+          io.to(u.socketId).emit('mute-command', { by: requester.name, muteAll: true });
+        });
+
+      broadcastUsersUpdate(io, requester.room);
+      // Confirmer à l'hôte
+      socket.emit('mute-all-done', {
+        message: 'Tous les micros ont été coupés.'
+      });
+    });
+
+    // ===== UNMUTE ALL — Réactiver tous les micros (hôte/admin uniquement) =====
+    socket.on('unmute-all', () => {
+      const requester = globalState.connectedUsers.get(socket.id);
+      if (!requester) return;
+      const roomState = getRoomState(requester.room);
+
+      if (roomState.hostSocketId !== socket.id && roomState.adminSocketId !== socket.id) return;
+
+      log(`🎤 UNMUTE ALL | ${requester.name} a réactivé tous les micros`);
+
+      Array.from(globalState.connectedUsers.values())
+        .filter(u => u.room === requester.room && u.socketId !== socket.id)
+        .forEach(u => {
+          io.to(u.socketId).emit('mic-allowed', { by: requester.name, unmuteAll: true });
+        });
+
+      socket.emit('unmute-all-done', {
+        message: 'Tous les micros ont été réactivés.'
+      });
     });
 
     // Baisser la main d'un utilisateur (par l'hôte)
@@ -713,6 +818,12 @@ function setupSocketHandlers(io) {
         
         // Diffuser la liste des utilisateurs mise à jour
         broadcastUsersUpdate(io, user.room);
+
+        // ===== DESTRUCTION AUTOMATIQUE =====
+        // Si la salle est maintenant vide, démarrer le timer de destruction
+        if (roomUsersCount === 0) {
+          scheduleRoomDestruction(io, user.room);
+        }
       }
     });
   });

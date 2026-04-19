@@ -2,13 +2,17 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>ESTLC SHARE SCREEN - Session</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="static/styles/style.css">
   <link rel="stylesheet" href="static/styles/style_chat.css">
   <link rel="stylesheet" href="static/styles/style_notes.css">
   <link rel="stylesheet" href="static/styles/style_participants.css">
+  <link rel="stylesheet" href="static/styles/style_modals.css">
   <link rel="stylesheet" href="static/styles/emoji.css">
   <link rel="stylesheet" href="static/styles/responsive.css">
 </head>
@@ -16,17 +20,17 @@
 
   <!-- TOP BAR -->
   <header class="room-header">
-    <div class="room-header-left"> 
+    <div class="room-header-left">
       <div class="brand-logo small">
         <img src="static/images/logo.png" alt="ESTLC" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-        <span style="display:none">ESS</span>
+        <span style="display:none">ES</span>
       </div>
       <div class="room-info">
         <span class="room-id" id="roomIdDisplay">12345</span>
         <div class="room-meta">
           <span><i class="fa-solid fa-users"></i> <span id="participantCount">0</span> participant(s)</span>
           <span class="share-badge" id="shareBadge" style="display:none">
-            <i class="fa-solid fa-display"></i> Partage actif
+            <i class="fa-solid fa-display"></i> <span>Partage actif</span>
           </span>
         </div>
       </div>
@@ -35,20 +39,23 @@
       <button class="btn-icon" id="btnSettings" title="Paramètres">
         <i class="fa-solid fa-gear"></i>
       </button>
-      <button class="btn-header-tab" id="btnParticipants">
-        <i class="fa-solid fa-users"></i> Participants
+      <button class="btn-header-tab" id="btnParticipants" title="Participants">
+        <i class="fa-solid fa-users"></i>
+        <span>Participants</span>
       </button>
-      <button class="btn-header-tab" id="btnNotes">
-        <i class="fa-solid fa-pen-to-square"></i> Notes
+      <button class="btn-header-tab" id="btnNotes" title="Notes">
+        <i class="fa-solid fa-pen-to-square"></i>
+        <span>Notes</span>
       </button>
-      <button class="btn-header-tab" id="btnChat">
-        <i class="fa-regular fa-comment"></i> Chat
+      <button class="btn-header-tab" id="btnChat" title="Chat">
+        <i class="fa-regular fa-comment"></i>
+        <span>Chat</span>
       </button>
     </div>
   </header>
 
   <!-- MAIN ROOM LAYOUT -->
-  <div class="room-layout">
+  <div class="room-layout" id="roomLayout">
 
     <!-- VIDEO AREA -->
     <div class="video-area" id="videoArea">
@@ -67,7 +74,6 @@
         <button class="expand-btn" id="expandBtn" title="Plein écran">
           <i class="fa-solid fa-expand"></i>
         </button>
-        <!-- Ici sera rendu le flux vidéo -->
         <div class="screen-placeholder" id="screenPlaceholder">
           <i class="fa-solid fa-display"></i>
           <p>Bienvenue dans <strong>ESTLC SHARING SCREEN</strong><br>En attente du partage...</p>
@@ -77,7 +83,7 @@
 
     </div>
 
-    <!-- SIDE PANEL -->
+    <!-- SIDE PANEL — Participants & Chat -->
     <div class="side-panel" id="sidePanel">
 
       <!-- PARTICIPANTS PANEL -->
@@ -103,8 +109,8 @@
           <h3>Chat</h3>
           <span class="msg-count" id="msgCount">0</span>
         </div>
-        
-        <!-- NOUVEAU : Onglets de navigation -->
+
+        <!-- Onglets de navigation -->
         <div class="chat-tabs" id="chatTabs">
           <button class="chat-tab active" id="tabPublic">Général</button>
           <button class="chat-tab" id="tabPrivate" style="display:none;">Privé <span id="privateBadge" class="badge"></span></button>
@@ -113,14 +119,12 @@
         <div class="chat-messages" id="chatMessages">
           <!-- Messages dynamiques -->
         </div>
-        
-        <!-- NOUVEAU : Conteneur Chat Privé (Liste + Conversation) -->
+
+        <!-- Conteneur Chat Privé -->
         <div class="private-chat-container hidden" id="privateChatContainer">
-          <!-- VUE 1 : Liste des discussions -->
           <div id="privateChatList" class="private-chat-list">
             <div class="chat-welcome"><p>Aucune conversation privée.</p></div>
           </div>
-          <!-- VUE 2 : Conversation active -->
           <div id="privateChatView" class="private-chat-view hidden">
             <!-- Géré par JS -->
           </div>
@@ -128,17 +132,20 @@
 
         <div class="chat-input-container">
           <input type="file" id="fileInput" style="display: none;">
-          <button class="attach-btn" title="Joindre un fichier (bientôt disponible)"><i class="fa-solid fa-paperclip"></i></button>
+          <button class="attach-btn" title="Joindre un fichier"><i class="fa-solid fa-paperclip"></i></button>
           <div class="chat-input-wrapper" id="chatInputWrapper">
-             <textarea id="chatInput" placeholder="Envoyer un message..." rows="1"></textarea>
+            <textarea id="chatInput" placeholder="Envoyer un message..." rows="1"></textarea>
           </div>
-          <!-- Le bouton emoji sera inséré ici par emoji.js -->
-          <button class="send-btn" id="sendBtn" title="Envoyer le message"><i class="fa-solid fa-paper-plane"></i></button>
+          <!-- Bouton emoji inséré ici par emoji.js -->
+          <button class="send-btn" id="sendBtn" title="Envoyer"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
       </div>
-      <div class="panel-content hidden" id="chatPanelContainer"></div> <!-- Placeholder, le vrai chat est maintenant un panneau coulissant -->
+
+      <!-- Placeholder vide (non utilisé visuellement) -->
+      <div class="panel-content hidden" id="chatPanelContainer"></div>
 
     </div>
+
   </div>
 
   <!-- BOTTOM CONTROLS -->
@@ -150,9 +157,17 @@
       <button class="ctrl-btn" id="btnCam" title="Couper la caméra">
         <i class="fa-solid fa-video"></i>
       </button>
-      <!-- Le bouton de partage est maintenant géré par app.js -->
+      <button class="ctrl-btn" id="btnMuteAll" title="Couper tous les micros" style="display:none;">
+        <i class="fa-solid fa-microphone-slash"></i>
+      </button>
+      <button class="ctrl-btn" id="btnUnmuteAll" title="Réactiver tous les micros" style="display:none;">
+        <i class="fa-solid fa-microphone"></i>
+      </button>
       <button class="ctrl-btn" id="btnScreen" title="Partager l'écran">
         <i class="fa-solid fa-display"></i>
+      </button>
+      <button class="ctrl-btn" id="btnContentShare" title="Partager un contenu">
+        <i class="fa-solid fa-photo-film"></i>
       </button>
       <button class="ctrl-btn" id="btnRequest" title="Demander à partager" style="display: none;">
         <i class="fa-solid fa-hand"></i>
@@ -160,7 +175,7 @@
       <button class="ctrl-btn" id="btnRaiseHand" title="Lever la main">
         <i class="fa-regular fa-hand-paper"></i>
       </button>
-      <button class="ctrl-btn" id="btnSpeaker" title="Couper le son (Haut-parleur)">
+      <button class="ctrl-btn" id="btnSpeaker" title="Couper le son">
         <i class="fa-solid fa-volume-high"></i>
       </button>
       <div class="react-wrapper">
@@ -173,7 +188,6 @@
         <i class="fa-solid fa-phone-slash"></i>
       </button>
     </div>
-    <div class="controls-spacer"></div>
   </footer>
 
   <!-- SETTINGS MODAL -->
@@ -208,9 +222,9 @@
           <label>Profil</label>
           <div class="setting-item-col">
             <span>Nom d'affichage</span>
-            <div class="input-group">
-              <input type="text" id="settingsNameInput" placeholder="Votre nom">
-              <button id="saveNameBtn" class="btn-primary small">Enregistrer</button>
+            <div class="input-group" style="display:flex;gap:8px;align-items:center;width:100%;">
+              <input type="text" id="settingsNameInput" placeholder="Votre nom" style="flex:1;min-width:0;">
+              <button id="saveNameBtn" class="btn-primary small" style="flex-shrink:0;white-space:nowrap;">Enregistrer</button>
             </div>
           </div>
         </div>
@@ -218,175 +232,250 @@
     </div>
   </div>
 
-  <!-- Scripts de l'application -->
+  <!-- Scripts -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="static/js/chat.js"></script>
   <script src="static/js/private-chat.js"></script>
   <script src="static/js/emoji.js"></script>
   <script src="static/js/notes-manager.js"></script>
   <script src="static/js/shareRequestManager.js"></script>
+  <script src="static/js/content-share-manager.js"></script>
   <script src="static/js/app.js"></script>
   <script src="static/js/participant-admin.js"></script>
 
-  <!-- Script de contrôle de l'interface de la salle -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const sidePanel = document.getElementById('sidePanel');
-      const videoArea = document.getElementById('videoArea');
+      const isMobile = () => window.innerWidth <= 768;
 
-      // Gestion du panneau latéral (participants/chat) avec Toggle
-      function showPanel(panel) {
-        const panelEl = document.getElementById(panel + 'Panel');
-        const btnEl = document.getElementById('btn' + panel.charAt(0).toUpperCase() + panel.slice(1));
+      // ===== GESTION DU PANNEAU LATÉRAL =====
+      function showPanel(panelName) {
+        const panelEl = document.getElementById(panelName + 'Panel');
+        const btnEl   = document.getElementById('btn' + panelName.charAt(0).toUpperCase() + panelName.slice(1));
 
-        // Si le panneau est déjà ouvert et actif, on le ferme (Toggle)
-        if (btnEl.classList.contains('active') && sidePanel.classList.contains('open')) {
-           sidePanel.classList.remove('open');
-           btnEl.classList.remove('active');
-           return;
+        // Toggle : si déjà actif + ouvert → on ferme
+        if (btnEl && btnEl.classList.contains('active') && sidePanel.classList.contains('open')) {
+          closeSidePanel();
+          return;
         }
 
-        // Sinon on ouvre/change
+        // Masquer tous les panels et désactiver tous les boutons
         document.querySelectorAll('.panel-content').forEach(p => p.classList.add('hidden'));
         document.querySelectorAll('.btn-header-tab').forEach(b => b.classList.remove('active'));
-        
+
+        // Afficher le panel demandé
         if (panelEl) panelEl.classList.remove('hidden');
-        if (btnEl) btnEl.classList.add('active');
-        
-        if (sidePanel) sidePanel.classList.add('open');
+        if (btnEl)   btnEl.classList.add('active');
+
+        sidePanel.classList.add('open');
       }
 
+      function closeSidePanel() {
+        sidePanel.classList.remove('open');
+        document.querySelectorAll('.btn-header-tab').forEach(b => b.classList.remove('active'));
+      }
+
+      // ===== SWIPE POUR FERMER LE PANNEAU (mobile) =====
+      let touchStartY = 0;
+      let touchCurrentY = 0;
+      let isDragging = false;
+
+      sidePanel.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        isDragging = true;
+      }, { passive: true });
+
+      sidePanel.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        touchCurrentY = e.touches[0].clientY;
+        const deltaY = touchCurrentY - touchStartY;
+        if (deltaY > 0) {
+          // Glisse vers le bas
+          sidePanel.style.transform = `translateY(${deltaY}px)`;
+        }
+      }, { passive: true });
+
+      sidePanel.addEventListener('touchend', () => {
+        isDragging = false;
+        const deltaY = touchCurrentY - touchStartY;
+        if (deltaY > 80) {
+          // Seuil dépassé → fermeture
+          closeSidePanel();
+        }
+        // Réinitialiser le transform inline (la transition CSS reprend)
+        sidePanel.style.transform = '';
+        touchStartY = 0;
+        touchCurrentY = 0;
+      });
+
+      // ===== PLEIN ÉCRAN =====
       function toggleFullscreen() {
         const container = document.getElementById('screenShareContainer');
         if (!document.fullscreenElement) {
-          if (container && container.requestFullscreen) {
-            container.requestFullscreen().catch(err => {
-              alert(`Erreur lors du passage en plein écran: ${err.message} (${err.name})`);
-            });
-          }
+          container?.requestFullscreen().catch(err => {
+            console.warn('Plein écran refusé :', err.message);
+          });
         } else {
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-          }
+          document.exitFullscreen?.();
         }
       }
 
-      // Listeners pour les boutons du panneau
-      const btnParticipants = document.getElementById('btnParticipants');
-      const btnChat = document.getElementById('btnChat');
-      const btnHangup = document.getElementById('btnHangup');
-      const expandBtn = document.getElementById('expandBtn');
-      const notifTag = document.getElementById('notifTag');
+      // ===== LISTENERS =====
+      document.getElementById('btnParticipants')?.addEventListener('click', () => showPanel('participants'));
+      document.getElementById('btnChat')?.addEventListener('click', () => showPanel('chat'));
+      document.getElementById('expandBtn')?.addEventListener('click', toggleFullscreen);
 
-      if (btnParticipants) btnParticipants.addEventListener('click', () => showPanel('participants'));
-      if (btnChat) btnChat.addEventListener('click', () => showPanel('chat'));
-      
-      if (btnHangup) {
-        btnHangup.addEventListener('click', () => {
-          if (confirm('Voulez-vous vraiment quitter la session ?')) {
-            window.location.href = 'index.html';
-          }
-        });
-      }
-
-      if (expandBtn) {
-        expandBtn.addEventListener('click', toggleFullscreen);
-      }
-
-      if (notifTag) {
-        const closeBtn = notifTag.querySelector('button');
-        if(closeBtn) {
-          closeBtn.addEventListener('click', () => notifTag.style.display = 'none');
+      document.getElementById('btnHangup')?.addEventListener('click', () => {
+        if (confirm('Voulez-vous vraiment quitter la session ?')) {
+          window.location.href = 'index.html';
         }
-      }
-      
-      // Initialiser le gestionnaire d'émojis pour le chat
+      });
+
+      // Fermer le panneau en tapant en dehors (mobile)
+      document.getElementById('videoArea')?.addEventListener('click', () => {
+        if (isMobile() && sidePanel.classList.contains('open')) {
+          closeSidePanel();
+        }
+      });
+
+      // ===== EMOJI =====
       const chatInput = document.getElementById('chatInput');
-      const sendBtn = document.getElementById('sendBtn');
+      const sendBtn   = document.getElementById('sendBtn');
       if (chatInput && sendBtn && typeof EmojiManager !== 'undefined') {
-          new EmojiManager(chatInput, sendBtn);
+        new EmojiManager(chatInput, sendBtn);
       }
 
-      // Initialiser l'état du panneau latéral.
-      // Sur mobile, on ne l'ouvre pas par défaut. Sur bureau, on montre les participants.
-      if (window.innerWidth <= 768) {
-        // S'assurer que le panneau est fermé et qu'aucun bouton n'est actif.
-        sidePanel.classList.remove('open');
-        document.querySelectorAll('.btn-header-tab').forEach(b => b.classList.remove('active'));
-      } else {
-        // Comportement normal pour les grands écrans.
+      // ===== ÉTAT INITIAL =====
+      if (!isMobile()) {
+        // Bureau : ouvrir participants par défaut
         showPanel('participants');
       }
+      // Mobile : panneau fermé par défaut (utilisateur ouvre lui-même)
 
-      // Gérer le changement d'état du plein écran (ex: touche Echap)
+      // ===== FULLSCREEN CHANGE =====
       document.addEventListener('fullscreenchange', () => {
         const container = document.getElementById('screenShareContainer');
         const icon = document.querySelector('#expandBtn i');
         if (document.fullscreenElement) {
-          if(container) container.classList.add('fullscreen');
-          if(icon) icon.className = 'fa-solid fa-compress';
+          container?.classList.add('fullscreen');
+          if (icon) icon.className = 'fa-solid fa-compress';
         } else {
-          if(container) container.classList.remove('fullscreen');
-          if(icon) icon.className = 'fa-solid fa-expand';
+          container?.classList.remove('fullscreen');
+          if (icon) icon.className = 'fa-solid fa-expand';
         }
       });
 
-      // ===== GESTION DES PARAMÈTRES =====
-      const btnSettings = document.getElementById('btnSettings');
-      const settingsModal = document.getElementById('settingsModal');
-      const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-      const darkModeToggle = document.getElementById('darkModeToggle');
+      // ===== PARAMÈTRES =====
+      const settingsModal    = document.getElementById('settingsModal');
+      const darkModeToggle   = document.getElementById('darkModeToggle');
       const settingsNameInput = document.getElementById('settingsNameInput');
-      const saveNameBtn = document.getElementById('saveNameBtn');
 
-      // Ouvrir/Fermer Modal
-      if (btnSettings) btnSettings.addEventListener('click', () => {
-        // Pré-remplir le nom actuel
+      document.getElementById('btnSettings')?.addEventListener('click', () => {
         const params = new URLSearchParams(window.location.search);
-        const currentName = (window.chatManager && window.chatManager.userName) || params.get('name') || '';
-        if(settingsNameInput) settingsNameInput.value = currentName;
-        
+        const currentName = (window.chatManager?.userName) || params.get('name') || '';
+        if (settingsNameInput) settingsNameInput.value = currentName;
         settingsModal.style.display = 'flex';
       });
 
-      if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => {
+      document.getElementById('closeSettingsBtn')?.addEventListener('click', () => {
         settingsModal.style.display = 'none';
       });
 
-      // Fermer en cliquant en dehors
       window.addEventListener('click', (e) => {
         if (e.target === settingsModal) settingsModal.style.display = 'none';
       });
 
-      // Thème Sombre (Persistance)
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
+      // Thème persistant
+      if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-mode');
-        if(darkModeToggle) darkModeToggle.checked = true;
+        if (darkModeToggle) darkModeToggle.checked = true;
       }
 
-      if (darkModeToggle) {
-        darkModeToggle.addEventListener('change', (e) => {
-          if (e.target.checked) {
-            document.body.classList.add('dark-mode');
-            localStorage.setItem('theme', 'dark');
-          } else {
-            document.body.classList.remove('dark-mode');
-            localStorage.setItem('theme', 'light');
-          }
+      darkModeToggle?.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          document.body.classList.add('dark-mode');
+          localStorage.setItem('theme', 'dark');
+        } else {
+          document.body.classList.remove('dark-mode');
+          localStorage.setItem('theme', 'light');
+        }
+      });
+
+      document.getElementById('saveNameBtn')?.addEventListener('click', () => {
+        const newName = settingsNameInput?.value.trim();
+        if (newName && window.socket) {
+          window.socket.emit('update-name', { name: newName });
+          if (window.chatManager) window.chatManager.setUserName(newName);
+          alert('Nom mis à jour !');
+          settingsModal.style.display = 'none';
+        }
+      });
+
+      // Exposer closeSidePanel pour usage externe si besoin
+      window.closeSidePanel = closeSidePanel;
+      window.showPanel = showPanel;
+
+      // ===== MUTE ALL / UNMUTE ALL (hôte uniquement) =====
+      // Les boutons sont cachés par défaut, montrés quand l'hôte partage
+      document.getElementById('btnMuteAll')?.addEventListener('click', () => {
+        if (window.socket) {
+          window.socket.emit('mute-all');
+        }
+      });
+      document.getElementById('btnUnmuteAll')?.addEventListener('click', () => {
+        if (window.socket) {
+          window.socket.emit('unmute-all');
+        }
+      });
+
+      // Exposer une fonction pour afficher/cacher les boutons hôte
+      // IMPORTANT : cette définition est la dernière — elle intègre TOUTE la logique
+      // (state.isAdmin, ContentShareManager, boutons muteAll)
+      window.setHostControls = function(isHost) {
+        // Mettre à jour l'état global (utilisé par app.js)
+        if (window.state) window.state.isAdmin = isHost;
+        // Notifier le ContentShareManager (sinon isHost reste false → pas de broadcast)
+        if (window.contentShareManager) window.contentShareManager.setHost(isHost);
+        // Afficher / masquer les boutons de modération hôte
+        const muteAll   = document.getElementById('btnMuteAll');
+        const unmuteAll = document.getElementById('btnUnmuteAll');
+        if (muteAll)   muteAll.style.display   = isHost ? 'flex' : 'none';
+        if (unmuteAll) unmuteAll.style.display  = isHost ? 'flex' : 'none';
+      };
+
+      // ===== ALERTES SALLE =====
+      if (window.socket) {
+        window.socket.on('room-closing-soon', (data) => {
+          // Bannière d'alerte 2 min avant fermeture
+          const banner = document.createElement('div');
+          banner.id = 'roomClosingBanner';
+          banner.style.cssText = `
+            position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+            background:#f59e0b;color:#1a1a1a;padding:12px 20px;border-radius:10px;
+            z-index:9999;font-weight:600;font-size:14px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.3);display:flex;gap:10px;align-items:center;
+          `;
+          banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${data.message}`;
+          document.body.appendChild(banner);
+          setTimeout(() => banner?.remove(), 30000);
         });
-      }
 
-      // Changer de nom
-      if (saveNameBtn && settingsNameInput) {
-        saveNameBtn.addEventListener('click', () => {
-          const newName = settingsNameInput.value.trim();
-          if (newName && window.socket) {
-            window.socket.emit('update-name', { name: newName });
-            if(window.chatManager) window.chatManager.setUserName(newName);
-            alert('Nom mis à jour !');
-            settingsModal.style.display = 'none';
-          }
+        window.socket.on('room-destroyed', (data) => {
+          alert(data.message + '\n\nVous allez être redirigé vers l\'accueil.');
+          window.location.href = 'index.html';
+        });
+
+        window.socket.on('mute-all-done', (data) => {
+          // Confirmation à l'hôte
+          const el = document.createElement('div');
+          el.style.cssText = `
+            position:fixed;top:80px;left:50%;transform:translateX(-50%);
+            background:#1e293b;color:white;padding:10px 18px;border-radius:8px;
+            z-index:9999;font-size:13px;font-weight:500;
+          `;
+          el.textContent = '🔇 ' + data.message;
+          document.body.appendChild(el);
+          setTimeout(() => el?.remove(), 3000);
         });
       }
     });
